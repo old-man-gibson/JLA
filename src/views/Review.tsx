@@ -1,0 +1,387 @@
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Rating, type Grade } from 'ts-fsrs'
+import { bind, unbind } from 'wanakana'
+import { AudioButton } from '../components/AudioButton'
+import { Sentence } from '../components/Sentence'
+import { DECK, WORDS_BY_ID, type Word } from '../data/deck'
+import { useKeys } from '../hooks/useKeys'
+import { finalizeKanaInput, isReadingCorrect } from '../lib/answer'
+import { plainText } from '../lib/furigana'
+import { speak, stopSpeaking } from '../lib/speech'
+import {
+  formatInterval,
+  gradeCard,
+  introduceWord,
+  isMature,
+  nextItem,
+  previewDue,
+  queueCounts,
+} from '../lib/srs'
+import type { AppState, Settings, StudyCard } from '../lib/types'
+
+type Update = (fn: (s: AppState) => AppState) => void
+
+interface Props {
+  state: AppState
+  update: Update
+  onExit: () => void
+}
+
+export function Review({ state, update, onExit }: Props) {
+  const [now, setNow] = useState(() => new Date())
+  const item = useMemo(() => nextItem(state, DECK, now), [state, now])
+  const counts = useMemo(() => queueCounts(state, DECK, now), [state, now])
+
+  // Only re-check the clock while waiting, so the card never changes under you mid-answer.
+  useEffect(() => {
+    if (item.type !== 'done') return
+    const timer = setInterval(() => setNow(new Date()), 15000)
+    return () => clearInterval(timer)
+  }, [item.type])
+
+  useEffect(() => stopSpeaking, [])
+
+  const apply = (fn: (s: AppState, at: Date) => AppState) => {
+    const at = new Date()
+    update((s) => fn(s, at))
+    setNow(at)
+  }
+
+  let body
+  if (item.type === 'new') {
+    body = (
+      <NewWord
+        key={`new:${item.word.id}`}
+        word={item.word}
+        settings={state.settings}
+        onStart={() => apply((s, at) => introduceWord(s, item.word.id, at))}
+      />
+    )
+  } else if (item.type === 'card') {
+    const card = item.card
+    const word = WORDS_BY_ID[card.wordId]
+    const onGrade = (rating: Grade) => apply((s, at) => gradeCard(s, card.id, rating, at))
+    const key = `${card.id}:${card.fsrs.reps}:${card.fsrs.due}`
+    body =
+      card.kind === 'recognize' ? (
+        <RecognizeCard key={key} card={card} word={word} settings={state.settings} onGrade={onGrade} />
+      ) : (
+        <ProduceCard key={key} card={card} word={word} settings={state.settings} onGrade={onGrade} />
+      )
+  } else {
+    body = <Done nextDue={item.nextDue} now={now} onExit={onExit} />
+  }
+
+  return (
+    <div className="review">
+      <div className="review-bar">
+        <button type="button" className="link-button" onClick={onExit}>
+          ← Done
+        </button>
+        <div className="counts" aria-label="Remaining">
+          <span className="count new" title="New words left today">{counts.newWords} new</span>
+          <span className="count learning" title="Cards in learning">{counts.learning} learning</span>
+          <span className="count review-count" title="Reviews due">{counts.review} due</span>
+        </div>
+      </div>
+      {body}
+    </div>
+  )
+}
+
+function useFurigana(settings: Settings, card?: StudyCard) {
+  const back = settings.furigana !== 'never'
+  const front = settings.furigana === 'always' || (settings.furigana === 'auto' && !(card && isMature(card)))
+  return { front, back }
+}
+
+function speakWord(word: Word) {
+  speak(word.reading, plainText(word.sentence))
+}
+
+function NewWord({ word, settings, onStart }: { word: Word; settings: Settings; onStart: () => void }) {
+  useEffect(() => {
+    if (settings.autoplayAudio) speakWord(word)
+  }, [word, settings.autoplayAudio])
+  const started = useRef(false)
+  const start = () => {
+    if (started.current) return
+    started.current = true
+    onStart()
+  }
+  useKeys({ Enter: start, ' ': start })
+  const showReading = word.word !== word.reading
+  return (
+    <section className="study-card">
+      <p className="card-tag new">New word</p>
+      <div className="word-head">
+        <span className="big-word" lang="ja">
+          {word.word}
+        </span>
+        <AudioButton texts={[word.reading]} label="Play word" />
+      </div>
+      {showReading && (
+        <p className="reading" lang="ja">
+          {word.reading}
+        </p>
+      )}
+      <p className="meaning">{word.meaning}</p>
+      <div className="example">
+        <Sentence source={word.sentence} furigana={settings.furigana !== 'never'} />
+        <AudioButton texts={[plainText(word.sentence)]} label="Play sentence" />
+      </div>
+      <p className="translation">{word.translation}</p>
+      <p className="hint">You’ll practise reading it and typing it from memory.</p>
+      <button type="button" className="primary wide" onClick={start} autoFocus>
+        Start learning <kbd>Enter</kbd>
+      </button>
+    </section>
+  )
+}
+
+interface CardProps {
+  card: StudyCard
+  word: Word
+  settings: Settings
+  onGrade: (rating: Grade) => void
+}
+
+/** Grades a card at most once, even if a key and a click land together. */
+function useOnce(onGrade: (rating: Grade) => void) {
+  const done = useRef(false)
+  return (rating: Grade) => {
+    if (done.current) return
+    done.current = true
+    onGrade(rating)
+  }
+}
+
+function RecognizeCard({ card, word, settings, onGrade }: CardProps) {
+  const [revealed, setRevealed] = useState(false)
+  const furigana = useFurigana(settings, card)
+  const grade = useOnce(onGrade)
+  const reveal = () => {
+    if (revealed) return
+    setRevealed(true)
+    if (settings.autoplayAudio) speakWord(word)
+  }
+  useKeys(
+    revealed
+      ? {
+          '1': () => grade(Rating.Again),
+          '2': () => grade(Rating.Hard),
+          '3': () => grade(Rating.Good),
+          '4': () => grade(Rating.Easy),
+          ' ': () => grade(Rating.Good),
+          Enter: () => grade(Rating.Good),
+        }
+      : { ' ': reveal, Enter: reveal },
+  )
+  return (
+    <section className="study-card">
+      <p className="card-tag">Read it. What does it say, and what does it mean?</p>
+      <Sentence
+        source={word.sentence}
+        furigana={revealed ? furigana.back : furigana.front}
+        target="highlight"
+        targetFurigana={revealed && furigana.back}
+        className="front-sentence"
+      />
+      {revealed ? (
+        <>
+          <div className="answer">
+            <div className="word-head">
+              <span className="big-word" lang="ja">
+                {word.word}
+              </span>
+              <AudioButton texts={[word.reading]} label="Play word" />
+            </div>
+            {word.word !== word.reading && (
+              <p className="reading" lang="ja">
+                {word.reading}
+              </p>
+            )}
+            <p className="meaning">{word.meaning}</p>
+            <div className="example-translation">
+              <p className="translation">{word.translation}</p>
+              <AudioButton texts={[plainText(word.sentence)]} label="Play sentence" />
+            </div>
+          </div>
+          <GradeButtons card={card} onGrade={grade} />
+        </>
+      ) : (
+        <button type="button" className="primary wide" onClick={reveal}>
+          Show answer <kbd>Space</kbd>
+        </button>
+      )}
+    </section>
+  )
+}
+
+function ProduceCard({ card, word, settings, onGrade }: CardProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [result, setResult] = useState<{ typed: string; correct: boolean } | null>(null)
+  const furigana = useFurigana(settings, card)
+  const grade = useOnce(onGrade)
+
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    bind(el, { IMEMode: true })
+    el.focus()
+    return () => unbind(el)
+  }, [])
+
+  const check = (e: FormEvent) => {
+    e.preventDefault()
+    if (result) return
+    const typed = finalizeKanaInput(inputRef.current?.value ?? '')
+    if (!typed) return
+    if (inputRef.current) inputRef.current.value = typed
+    setResult({ typed, correct: isReadingCorrect(word, typed) })
+    if (settings.autoplayAudio) speakWord(word)
+  }
+
+  useKeys(
+    result?.correct
+      ? {
+          '2': () => grade(Rating.Hard),
+          '3': () => grade(Rating.Good),
+          '4': () => grade(Rating.Easy),
+          Enter: () => grade(Rating.Good),
+        }
+      : { Enter: () => grade(Rating.Again) },
+    result !== null,
+  )
+
+  return (
+    <section className="study-card">
+      <p className="card-tag">Type the Japanese for the gap</p>
+      <p className="prompt-meaning">{word.meaning}</p>
+      <Sentence
+        source={word.sentence}
+        furigana={result ? furigana.back : furigana.front}
+        target={result ? 'highlight' : 'blank'}
+        className="front-sentence"
+      />
+      <p className="translation">{word.translation}</p>
+      <form onSubmit={check} className="answer-form">
+        <input
+          ref={inputRef}
+          lang="ja"
+          className={`answer-input ${result ? (result.correct ? 'right' : 'wrong') : ''}`}
+          placeholder="Type in romaji"
+          aria-label="Your answer"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          readOnly={result !== null}
+        />
+        {!result && (
+          <button type="submit" className="primary">
+            Check
+          </button>
+        )}
+      </form>
+      {result && (
+        <>
+          <div className={`verdict ${result.correct ? 'right' : 'wrong'}`}>
+            {result.correct ? 'Correct' : 'Not quite'}
+          </div>
+          <div className="answer">
+            <div className="word-head">
+              <span className="big-word" lang="ja">
+                {word.word}
+              </span>
+              <AudioButton texts={[word.reading]} label="Play word" />
+            </div>
+            {word.word !== word.reading && (
+              <p className="reading" lang="ja">
+                {word.reading}
+              </p>
+            )}
+            {!result.correct && (
+              <p className="you-typed">
+                You typed <span lang="ja">{result.typed}</span>
+              </p>
+            )}
+          </div>
+          {result.correct ? (
+            <GradeButtons card={card} onGrade={grade} hideAgain />
+          ) : (
+            <div className="grade-row">
+              <button type="button" className="primary wide" onClick={() => grade(Rating.Again)}>
+                Continue <kbd>Enter</kbd>
+              </button>
+              <button type="button" className="link-button" onClick={() => grade(Rating.Good)}>
+                I was right (typo or alternative answer)
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+const GRADES: { rating: Grade; label: string; key: string }[] = [
+  { rating: Rating.Again, label: 'Again', key: '1' },
+  { rating: Rating.Hard, label: 'Hard', key: '2' },
+  { rating: Rating.Good, label: 'Good', key: '3' },
+  { rating: Rating.Easy, label: 'Easy', key: '4' },
+]
+
+function GradeButtons({
+  card,
+  onGrade,
+  hideAgain = false,
+}: {
+  card: StudyCard
+  onGrade: (rating: Grade) => void
+  hideAgain?: boolean
+}) {
+  const [now] = useState(() => new Date())
+  const due = useMemo(() => previewDue(card, now), [card, now])
+  const grades = hideAgain ? GRADES.filter((g) => g.rating !== Rating.Again) : GRADES
+  return (
+    <div className="grades" role="group" aria-label="How well did you know it?">
+      {grades.map((g) => (
+        <button
+          key={g.rating}
+          type="button"
+          className={`grade grade-${g.label.toLowerCase()}`}
+          onClick={() => onGrade(g.rating)}
+        >
+          <span className="grade-label">{g.label}</span>
+          <span className="grade-interval">{formatInterval(now, due[g.rating])}</span>
+          <kbd>{g.key}</kbd>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Done({ nextDue, now, onExit }: { nextDue?: Date; now: Date; onExit: () => void }) {
+  useKeys({ Enter: onExit })
+  return (
+    <section className="study-card done">
+      <p className="done-mark" lang="ja">
+        おつかれさま
+      </p>
+      <h2>That’s everything for now.</h2>
+      {nextDue && (
+        <p>
+          Next card in <strong>{formatInterval(now, nextDue)}</strong>.
+        </p>
+      )}
+      <p className="hint">
+        Now spend some time with real Japanese at your level: a beginner podcast, a graded reader, or a show with
+        Japanese subtitles. Reviews keep words in memory; reading and listening is how you learn to use them.
+      </p>
+      <button type="button" className="primary wide" onClick={onExit}>
+        Back to today
+      </button>
+    </section>
+  )
+}
