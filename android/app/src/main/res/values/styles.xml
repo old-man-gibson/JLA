@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The page reads light or dark mode from this theme. -->
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#2f4a8a</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+    <color name="background">#f7f5f0</color>
+</resources>

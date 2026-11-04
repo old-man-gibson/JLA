@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { connectCloud, type CloudStore } from './lib/cloud'
+import { RELEASES_URL, shellOutdated } from './lib/platform'
 import { loadState, requestPersistentStorage, saveState } from './lib/store'
 import type { AppState } from './lib/types'
 import type { RunOptions } from './lib/run'
@@ -130,6 +131,13 @@ export default function App() {
 
   return (
     <div className="app">
+      {shellOutdated() && mode.kind === 'tabs' && (
+        <p className="update-banner">
+          A new version of the Android app is available.{' '}
+          <a href={`${RELEASES_URL}/download/JLA.apk`}>Download it</a> and install it over this one. Your progress
+          stays.
+        </p>
+      )}
       {saveFailed && sync !== 'synced' && (
         <p className="save-warning" role="alert">
           Progress can’t be saved in this browser (storage is blocked or full). Download a backup from Settings before

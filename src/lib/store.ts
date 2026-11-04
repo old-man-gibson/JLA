@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS: Settings = {
   furigana: 'auto',
   autoplayAudio: true,
   decks: ['starter', 'adventurer'],
+  keyboard: 'auto',
 }
 
 export function defaultGuild(now = new Date()): GuildState {

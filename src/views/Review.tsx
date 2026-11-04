@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { bind, unbind } from 'wanakana'
 import { AudioButton } from '../components/AudioButton'
+import { Keypad } from '../components/Keypad'
 import { Sentence } from '../components/Sentence'
 import type { Word } from '../data/deck'
 import { useKeys } from '../hooks/useKeys'
@@ -18,6 +19,7 @@ import {
   queueCounts,
 } from '../lib/srs'
 import type { AppState, Settings, StudyCard } from '../lib/types'
+import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
 import { findWord, studyWords } from '../lib/words'
 
 type Update = (fn: (s: AppState) => AppState) => void
@@ -243,24 +245,38 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
   const [result, setResult] = useState<{ typed: string; correct: boolean } | null>(null)
   const furigana = useFurigana(settings, card)
   const grade = useOnce(onGrade)
+  const onscreen = useOnscreenKeys(settings)
+  const resultRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = inputRef.current
-    if (!el) return
+    if (!el || onscreen) return
     bind(el, { IMEMode: true })
     el.focus()
     return () => unbind(el)
-  }, [])
+  }, [onscreen])
 
-  const check = (e: FormEvent) => {
-    e.preventDefault()
+  const check = () => {
     if (result) return
     const typed = finalizeKanaInput(inputRef.current?.value ?? '')
     if (!typed) return
-    if (inputRef.current) inputRef.current.value = typed
+    if (inputRef.current) {
+      inputRef.current.value = typed
+      // Closes a phone keyboard so the answer and grade buttons aren't hidden behind it.
+      inputRef.current.blur()
+    }
     setResult({ typed, correct: isReadingCorrect(word, typed) })
     if (settings.autoplayAudio) speakWord(word)
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
   }
+
+  const pressKey = (key: TypedKey) => {
+    const el = inputRef.current
+    if (!el || result) return
+    if (key === 'enter') check()
+    else el.value = applyKey(el.value, key, 'kana')
+  }
+  useTypingKeys(onscreen && result === null, pressKey)
 
   useKeys(
     result?.correct
@@ -285,27 +301,35 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
         className="front-sentence"
       />
       <p className="translation">{word.translation}</p>
-      <form onSubmit={check} className="answer-form">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          check()
+        }}
+        className="answer-form"
+      >
         <input
           ref={inputRef}
           lang="ja"
           className={`answer-input ${result ? (result.correct ? 'right' : 'wrong') : ''}`}
-          placeholder="Type in romaji"
+          placeholder={onscreen ? 'Tap the keys below' : 'Type in romaji'}
           aria-label="Your answer"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
           spellCheck={false}
-          readOnly={result !== null}
+          readOnly={result !== null || onscreen}
+          inputMode={onscreen ? 'none' : undefined}
         />
-        {!result && (
+        {!result && !onscreen && (
           <button type="submit" className="primary">
             Check
           </button>
         )}
       </form>
+      {!result && onscreen && <Keypad onKey={pressKey} enterLabel="Check" />}
       {result && (
-        <>
+        <div className="result-block" ref={resultRef}>
           <div className={`verdict ${result.correct ? 'right' : 'wrong'}`}>
             {result.correct ? 'Correct' : 'Not quite'}
           </div>
@@ -340,7 +364,7 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
               </button>
             </div>
           )}
-        </>
+        </div>
       )}
     </section>
   )

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bind, unbind } from 'wanakana'
+import { Keypad } from '../components/Keypad'
 import {
   applyUpgrade,
   banish,
@@ -19,6 +20,7 @@ import {
   type Upgrade,
 } from '../lib/run'
 import type { AppState } from '../lib/types'
+import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
@@ -125,7 +127,10 @@ export function NightWatch({ state, update, options, onExit }: Props) {
     return { x: cx + Math.cos(e.angle) * e.dist * r, y: cy + Math.sin(e.angle) * e.dist * r }
   }
 
-  const focusInput = () => inputRef.current?.focus({ preventScroll: true })
+  const onscreen = useOnscreenKeys(state.settings)
+  const focusInput = () => {
+    if (!onscreen) inputRef.current?.focus({ preventScroll: true })
+  }
 
   const finish = useCallback(
     (s: RunState) => {
@@ -206,10 +211,23 @@ export function NightWatch({ state, update, options, onExit }: Props) {
     focusInput()
   }
 
-  // Keyboard input, with romaji turning into kana as you type.
+  // On-screen keys (and physical keys while they're shown).
+  const pressKey = (key: TypedKey) => {
+    const el = inputRef.current
+    if (!el || halted.current) return
+    if (key === 'enter') {
+      tryMatch(true)
+    } else {
+      el.value = applyKey(el.value, key, 'kana')
+      tryMatch(false)
+    }
+  }
+  useTypingKeys(onscreen && over === null, pressKey)
+
+  // The device keyboard, with romaji turning into kana as you type.
   useEffect(() => {
     const el = inputRef.current
-    if (!el) return
+    if (!el || onscreen) return
     bind(el, { IMEMode: true })
     const onInput = () => {
       // Phone keyboards often send a space as text rather than a key press.
@@ -232,7 +250,7 @@ export function NightWatch({ state, update, options, onExit }: Props) {
       el.removeEventListener('keydown', onKey)
       unbind(el)
     }
-  }, [])
+  }, [onscreen])
 
   // Draft choices by number key.
   useEffect(() => {
@@ -607,18 +625,23 @@ export function NightWatch({ state, update, options, onExit }: Props) {
           ref={inputRef}
           className="nw-input"
           lang="ja"
-          placeholder="Type a reading in romaji"
+          placeholder={onscreen ? 'Tap the keys below' : 'Type a reading in romaji'}
           aria-label="Type a reading"
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
           spellCheck={false}
           disabled={over !== null}
+          readOnly={onscreen}
+          inputMode={onscreen ? 'none' : undefined}
         />
-        <button type="submit" className="nw-enter" onPointerDown={(e) => e.preventDefault()} aria-label="Enter">
-          ⏎
-        </button>
+        {!onscreen && (
+          <button type="submit" className="nw-enter" onPointerDown={(e) => e.preventDefault()} aria-label="Enter">
+            ⏎
+          </button>
+        )}
       </form>
+      {onscreen && over === null && <Keypad dark onKey={pressKey} enterLabel="Enter" />}
     </div>
   )
 }

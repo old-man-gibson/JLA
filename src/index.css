@@ -1771,3 +1771,98 @@ button:disabled {
 .read-callout {
   background: var(--accent-soft);
 }
+
+.update-banner {
+  margin: 0;
+  padding: 10px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--accent-soft);
+  color: var(--text);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* On-screen romaji keyboard */
+.keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.keypad-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.key {
+  flex: 0 1 9%;
+  min-width: 0;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.15rem;
+  font-family: var(--font-ui);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.key:active {
+  background: var(--accent-soft);
+}
+
+.key.action {
+  flex: 0 1 22%;
+}
+
+.key.enter {
+  flex: 0 1 62%;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.keypad.dark .key {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f2efe6;
+}
+
+.keypad.dark .key:active {
+  background: rgba(255, 176, 92, 0.3);
+}
+
+.keypad.dark .key.enter {
+  background: #8ea8ec;
+  border-color: #8ea8ec;
+  color: #10131b;
+}
+
+.answer-input[readonly] {
+  caret-color: transparent;
+}
+
+.drill-kana.compact {
+  font-size: 4.5rem;
+  padding: 4px 0;
+}
+
+.result-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nw-screen .keypad {
+  padding-left: max(4px, env(safe-area-inset-left, 0px));
+  padding-right: max(4px, env(safe-area-inset-right, 0px));
+  padding-bottom: 8px;
+}

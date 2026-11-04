@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The site the app shows. CI passes the repository's GitHub Pages address.
+def appUrl = project.findProperty('appUrl') ?: 'https://old-man-gibson.github.io/JLA/'
+
+android {
+    namespace 'io.github.oldmangibson.jla'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'io.github.oldmangibson.jla'
+        minSdk 24
+        // 34 rather than 35 keeps Android 15 from drawing the page under the status bar.
+        targetSdk 34
+        // Bump versionCode whenever this shell changes: the web app compares it
+        // with the installed app and offers the new APK when it's newer.
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            // CI creates this password-protected key on its first run (see .github/workflows/android.yml).
+            def keystore = System.getenv('JLA_KEYSTORE')
+            if (keystore) {
+                storeFile file(keystore)
+                storeType 'pkcs12'
+                storePassword System.getenv('JLA_KEYSTORE_PASSWORD')
+                keyAlias 'jla'
+                keyPassword System.getenv('JLA_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        // A sideloaded app doesn't need Play Store target-SDK checks to block the build.
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}

@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Keypad } from '../components/Keypad'
 import { GROUP_LABELS, kanaFor, SCRIPT_LABELS, type KanaGroup, type KanaItem, type Script } from '../data/kana'
 import { isKanaAnswerCorrect, normalizeRomaji } from '../lib/answer'
 import { FLUENT_MS, FLUENT_STREAK, kanaLevel, pickKanaSession, recordKanaAnswer } from '../lib/kanaDrill'
-import type { AppState, KanaStat } from '../lib/types'
+import type { AppState, KanaStat, Settings } from '../lib/types'
+import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
@@ -24,6 +26,7 @@ export function Kana({ state, update }: { state: AppState; update: Update }) {
       <KanaDrill
         key={session.id}
         items={session.items}
+        settings={state.settings}
         update={update}
         onAgain={start}
         onExit={() => setSession(null)}
@@ -128,11 +131,13 @@ interface Answer {
 
 function KanaDrill({
   items,
+  settings,
   update,
   onAgain,
   onExit,
 }: {
   items: KanaItem[]
+  settings: Settings
   update: Update
   onAgain: () => void
   onExit: () => void
@@ -147,6 +152,7 @@ function KanaDrill({
 
   const item = queue[index]
   const finished = index >= queue.length
+  const onscreen = useOnscreenKeys(settings)
 
   useEffect(() => {
     shownAt.current = performance.now()
@@ -159,8 +165,7 @@ function KanaDrill({
     if (inputRef.current) inputRef.current.value = ''
   }
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
+  const submit = () => {
     const el = inputRef.current
     if (!el || !item) return
     if (missed) {
@@ -185,6 +190,14 @@ function KanaDrill({
     }
   }
 
+  const pressKey = (key: TypedKey) => {
+    const el = inputRef.current
+    if (!el) return
+    if (key === 'enter') submit()
+    else el.value = applyKey(el.value, key, 'romaji')
+  }
+  useTypingKeys(onscreen && !finished, pressKey)
+
   if (finished) return <DrillSummary answers={answers} onAgain={onAgain} onExit={onExit} />
 
   return (
@@ -200,10 +213,31 @@ function KanaDrill({
       <div className="progress" aria-hidden="true">
         <div className="progress-fill" style={{ width: `${(index / queue.length) * 100}%` }} />
       </div>
-      <div className={`drill-kana ${missed ? 'wrong' : ''}`} lang="ja">
+      <div className={`drill-kana ${missed ? 'wrong' : ''} ${onscreen ? 'compact' : ''}`} lang="ja">
         {item.kana}
       </div>
-      <form onSubmit={submit} className="answer-form">
+      <div className="drill-feedback" aria-live="polite">
+        {missed ? (
+          <p className="verdict wrong">
+            <span lang="ja">{missed.kana}</span> is <strong>{missed.romaji[0]}</strong>
+            {missed.romaji.length > 1 && <span className="muted"> (also {missed.romaji.slice(1).join(', ')})</span>}.
+            {' '}{onscreen ? 'Tap Enter' : 'Press Enter'} to continue.
+          </p>
+        ) : last?.correct ? (
+          <p className="verdict right">
+            <span lang="ja">{last.item.kana}</span> {last.item.romaji[0]} · {(last.ms / 1000).toFixed(1)}s
+          </p>
+        ) : (
+          <p className="muted">Type the romaji, then Enter.</p>
+        )}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          submit()
+        }}
+        className="answer-form"
+      >
         <input
           ref={inputRef}
           className={`answer-input romaji ${missed ? 'wrong' : ''}`}
@@ -213,24 +247,11 @@ function KanaDrill({
           autoCorrect="off"
           autoCapitalize="none"
           spellCheck={false}
-          inputMode="text"
+          inputMode={onscreen ? 'none' : 'text'}
+          readOnly={onscreen}
         />
       </form>
-      <div className="drill-feedback" aria-live="polite">
-        {missed ? (
-          <p className="verdict wrong">
-            <span lang="ja">{missed.kana}</span> is <strong>{missed.romaji[0]}</strong>
-            {missed.romaji.length > 1 && <span className="muted"> (also {missed.romaji.slice(1).join(', ')})</span>}.
-            Press Enter to continue.
-          </p>
-        ) : last?.correct ? (
-          <p className="verdict right">
-            <span lang="ja">{last.item.kana}</span> {last.item.romaji[0]} · {(last.ms / 1000).toFixed(1)}s
-          </p>
-        ) : (
-          <p className="muted">Type the romaji and press Enter.</p>
-        )}
-      </div>
+      {onscreen && <Keypad onKey={pressKey} />}
     </div>
   )
 }

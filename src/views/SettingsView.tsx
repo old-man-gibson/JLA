@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { DECKS } from '../data/decks'
 import { getCapability, type Downloads } from '../lib/cloud'
+import { androidShell } from '../lib/platform'
 import { defaultState, exportState, importState } from '../lib/store'
 import { speak, speechSupported, whenVoicesReady } from '../lib/speech'
 import type { AppState, FuriganaMode, Settings } from '../lib/types'
@@ -44,6 +45,12 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
   const download = async () => {
     const filename = `nihongo-backup-${new Date().toISOString().slice(0, 10)}.json`
     const data = exportState(state)
+    const shell = androidShell()
+    if (shell) {
+      shell.saveFile(filename, data)
+      setMessage('Choose where to save the backup.')
+      return
+    }
     // Inside claude.ai the page can't start downloads itself; the platform asks the viewer instead.
     const downloads = await getCapability<Downloads>('downloads')
     if (downloads) {
@@ -164,6 +171,33 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
               <span>
                 <strong>{o.label}</strong>
                 <span className="setting-help">{o.help}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="setting">
+        <span className="setting-label">Typing answers</span>
+        <div className="radio-list" role="radiogroup" aria-label="Typing answers">
+          {(
+            [
+              ['auto', 'Automatic', 'On-screen romaji keys on touch screens, your keyboard elsewhere.'],
+              ['onscreen', 'On-screen romaji keys', 'Keys laid out in the page, so nothing hides behind a phone keyboard.'],
+              ['system', 'My device’s keyboard', 'Use this for a Japanese flick keyboard. On phones it may cover part of the screen.'],
+            ] as const
+          ).map(([value, label, help]) => (
+            <label key={value} className={`radio ${settings.keyboard === value ? 'on' : ''}`}>
+              <input
+                type="radio"
+                name="keyboard"
+                value={value}
+                checked={settings.keyboard === value}
+                onChange={() => set({ keyboard: value })}
+              />
+              <span>
+                <strong>{label}</strong>
+                <span className="setting-help">{help}</span>
               </span>
             </label>
           ))}

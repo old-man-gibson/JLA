@@ -1,0 +1,91 @@
+# Builds the Android app (a thin shell around the GitHub Pages site) and
+# publishes it as a release. It runs only when the shell changes, since the
+# app's content updates through the site.
+#
+# Signing: Android only installs an update over an app signed with the same
+# key. On its first run this workflow creates that key, protected by the
+# JLA_KEYSTORE_PASSWORD repository secret, and commits it as
+# android/release.p12. Use a long random password: the key file is public.
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      JLA_KEYSTORE_PASSWORD: ${{ secrets.JLA_KEYSTORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for the signing password
+        id: secret
+        run: |
+          if [ -z "$JLA_KEYSTORE_PASSWORD" ]; then
+            echo "::warning title=Android app not built::Add a repository secret named JLA_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions), then run this workflow again."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.secret.outputs.ready == 'true'
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Create the signing key on the first run
+        if: steps.secret.outputs.ready == 'true'
+        run: |
+          if [ ! -f android/release.p12 ]; then
+            keytool -genkeypair -alias jla -keyalg RSA -keysize 4096 -validity 36500 \
+              -storetype PKCS12 -keystore android/release.p12 \
+              -storepass "$JLA_KEYSTORE_PASSWORD" -dname "CN=JLA"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add android/release.p12
+            git commit -m "Add password-protected Android signing key"
+            git push
+          fi
+          # Stop here with a clear error if the password doesn't open the key.
+          keytool -list -keystore android/release.p12 -storetype PKCS12 \
+            -storepass "$JLA_KEYSTORE_PASSWORD" > /dev/null
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.secret.outputs.ready == 'true'
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Build the APK
+        if: steps.secret.outputs.ready == 'true'
+        working-directory: android
+        env:
+          JLA_KEYSTORE: ${{ github.workspace }}/android/release.p12
+        run: gradle assembleRelease --no-daemon -PappUrl="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+      - name: Publish a release
+        if: steps.secret.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(grep -m1 -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          cp android/app/build/outputs/apk/release/app-release.apk JLA.apk
+          tag="android-v${version}-build${{ github.run_number }}"
+          gh release create "$tag" JLA.apk \
+            --target "$(git rev-parse HEAD)" \
+            --title "Android app, version ${version}" \
+            --notes "Install JLA.apk on your phone. The app loads the latest version of the site each time it opens, so you only need a new APK when the app tells you to." \
+            --latest

@@ -50,6 +50,8 @@ export interface Settings {
   autoplayAudio: boolean
   /** Built-in decks new words are drawn from. Words already started keep being reviewed either way. */
   decks: DeckId[]
+  /** auto: on-screen romaji keys on touch screens, the device keyboard elsewhere. */
+  keyboard: 'auto' | 'onscreen' | 'system'
 }
 
 /** A word the learner added from the manga reader. */

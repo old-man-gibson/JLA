@@ -13,6 +13,7 @@ A small Japanese study app built around how memory works: kana drilled until rea
 - **Audio** through the browser's Japanese text-to-speech voice.
 - **Progress stats** that measure learning rather than streaks: words known and mature, recall rate over 30 days, and fluent kana.
 - **Backups.** Export and import a JSON file of your progress.
+- **On-screen romaji keys** on touch screens, laid out in the page so the phone's keyboard never covers the card or the game. Settings can switch back to the device keyboard (for example a Japanese flick keyboard).
 - **Manga reader.** Photograph a manga page (or paste text). Claude transcribes it line by line with furigana, word meanings and short grammar notes. Translations stay hidden until you ask, so you try reading first. Tap a word to add it to your reviews; its example sentence becomes the actual line from your manga. (Needs the claude.ai version, where it runs on your own Claude account.)
 - **Decks.** *Starter* (62 everyday words) and *Adventurer* (45 fantasy and isekai words: 勇者, 魔法, 冒険者, 経験値…). New words alternate between enabled decks, and words you add from manga come first. Every built-in sentence is checked by a test against its word's reading.
 - **Guild (idle).** Every card you've learned is an adventurer earning gold. Income grows with how well you know the card (FSRS stability), and overdue cards rest and earn nothing until reviewed, so the idle loop rewards reviewing on time rather than grinding. Gold piles up for at most 24 hours. Guild rank goes from F to S with mature cards. Gold buys buildings and permanent Night Watch upgrades.
@@ -37,6 +38,28 @@ npm run build:artifact -- path/to/page.html
 
 This inlines the app into one file in the form claude.ai artifacts expect. Publish it with the `db`, `user`, `downloads` and `sample` (with images) capabilities. In that setting progress also syncs to the viewer's private artifact storage, and the manga reader asks Claude on the viewer's account (`src/lib/cloud.ts`). Everywhere else progress is saved in `localStorage` only and the reader is unavailable.
 
+## Android app
+
+The APK is a thin Android shell (`android/`) around the web app on GitHub Pages, so **the app updates whenever this repository does**: every push to `main` runs the tests and redeploys the site (`.github/workflows/pages.yml`), and the app picks up the new version the next time it opens. After the first launch it also works offline. The shell adds Android text-to-speech, backup saving and file picking.
+
+The shell itself rarely changes. When it does, bump `versionCode` in `android/app/build.gradle`; `.github/workflows/android.yml` builds a new APK and publishes it as a release, and the app shows a banner offering the download.
+
+### One-time setup
+
+1. **Turn on Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. **Add the signing password:** Settings → Secrets and variables → Actions → New repository secret named `JLA_KEYSTORE_PASSWORD`, with a long random value (a password manager's generator is ideal). On its first run the Android workflow creates the app's signing key, locked with this password, and commits it as `android/release.p12`. Android only accepts an update signed with the same key, so don't change the password or delete that file.
+3. **Run both workflows once:** Actions → *Deploy web app* → Run workflow, then Actions → *Build Android app* → Run workflow.
+
+### Installing
+
+On your phone, open [the latest release](https://github.com/old-man-gibson/JLA/releases/latest), download `JLA.apk`, and allow your browser to install apps when Android asks.
+
+Notes:
+
+- Progress is stored on the phone, separately from the claude.ai version. Move it with Settings → Download backup / Restore from file.
+- The manga reader needs Claude, so it only works in the claude.ai version.
+- Alternatively, open the Pages site in Chrome and choose *Add to Home screen*: it installs the same app without an APK.
+
 ## Layout
 
 | Path | What's there |
@@ -52,6 +75,10 @@ This inlines the app into one file in the form claude.ai artifacts expect. Publi
 | `src/lib/kanaDrill.ts` | Kana fluency rules and weighted session picking |
 | `src/lib/store.ts` | Load/save/backup of the app state |
 | `src/lib/cloud.ts` | Optional sync when running as a claude.ai artifact |
+| `src/lib/typing.ts`, `src/components/Keypad.tsx` | On-screen romaji keyboard |
+| `src/lib/platform.ts`, `public/sw.js` | Android shell bridge, offline support for the Pages site |
+| `android/` | Android shell (Java, no third-party dependencies) |
+| `.github/workflows/` | Deploy to Pages on every push; build and release the APK |
 | `src/views/` | Today, Review, Read, Kana, Play (guild), Night Watch, Words, Settings screens |
 
 ## Roadmap
