@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { DECKS } from '../data/decks'
 import { getCapability, type Downloads } from '../lib/cloud'
 import { defaultState, exportState, importState } from '../lib/store'
 import { speak, speechSupported, whenVoicesReady } from '../lib/speech'
@@ -117,6 +118,34 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
           <button type="button" className="secondary" onClick={() => set({ newWordsPerDay: Math.min(50, settings.newWordsPerDay + 1) })} aria-label="More">
             +
           </button>
+        </div>
+      </section>
+
+      <section className="setting">
+        <span className="setting-label">Decks</span>
+        <p className="setting-help">New words are taken from each enabled deck in turn. Words you’ve started keep coming up for review even if you switch their deck off.</p>
+        <div className="radio-list">
+          {DECKS.map((deck) => {
+            const on = settings.decks.includes(deck.id)
+            return (
+              <label key={deck.id} className={`radio ${on ? 'on' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() =>
+                    set({ decks: on ? settings.decks.filter((d) => d !== deck.id) : [...settings.decks, deck.id] })
+                  }
+                />
+                <span>
+                  <strong>
+                    <span lang="ja">{deck.ja}</span> {deck.name}
+                  </strong>{' '}
+                  <span className="muted">· {deck.words.length} words</span>
+                  <span className="setting-help">{deck.description}</span>
+                </span>
+              </label>
+            )
+          })}
         </div>
       </section>
 

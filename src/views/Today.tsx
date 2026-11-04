@@ -1,24 +1,29 @@
 import { useState } from 'react'
-import { DECK } from '../data/deck'
 import { KANA } from '../data/kana'
 import { kanaLevel } from '../lib/kanaDrill'
+import { collectGold, formatGold, guildReport } from '../lib/guild'
 import { computeStats, formatInterval, nextItem, queueCounts } from '../lib/srs'
 import type { AppState } from '../lib/types'
+import { studyWords } from '../lib/words'
 
 interface Props {
   state: AppState
+  update: (fn: (s: AppState) => AppState) => void
   onStartReview: () => void
-  onOpenKana: () => void
+  onOpen: (tab: 'kana' | 'read' | 'play') => void
 }
 
-export function Today({ state, onStartReview, onOpenKana }: Props) {
+export function Today({ state, update, onStartReview, onOpen }: Props) {
   // Captured once per visit; the screen remounts whenever you come back to it.
   const [now] = useState(() => new Date())
-  const counts = queueCounts(state, DECK, now)
-  const stats = computeStats(state, DECK, now)
-  const next = nextItem(state, DECK, now)
+  const words = studyWords(state)
+  const counts = queueCounts(state, words, now)
+  const stats = computeStats(state, words, now)
+  const next = nextItem(state, words, now)
   const due = counts.learning + counts.review
   const hasWork = next.type !== 'done'
+  const guild = guildReport(state, words, now)
+  const [collected, setCollected] = useState(0)
 
   const fluent = (script: 'hiragana' | 'katakana') => {
     const items = KANA.filter((k) => k.script === script)
@@ -61,11 +66,61 @@ export function Today({ state, onStartReview, onOpenKana }: Props) {
             <strong>Make kana automatic first.</strong> Every word card uses kana, so reading it without effort makes
             everything else easier.
           </p>
-          <button type="button" className="secondary" onClick={onOpenKana}>
+          <button type="button" className="secondary" onClick={() => onOpen('kana')}>
             Practise kana
           </button>
         </section>
       )}
+
+      <section className="today-guild">
+        <div className={`rank-badge rank-${guild.rank.id}`} aria-label={`Guild rank ${guild.rank.id}`}>
+          {guild.rank.id}
+        </div>
+        <p>
+          <strong>{formatGold(state.guild.gold)} gold</strong>
+          {collected > 0 ? (
+            <span className="muted"> · collected {formatGold(collected)}</span>
+          ) : (
+            <span className="muted">
+              {' '}
+              · {formatGold(guild.pending)} waiting · {guild.perHour.toFixed(1)}/hour
+            </span>
+          )}
+          {guild.resting > 0 && (
+            <>
+              <br />
+              <span className="small">
+                {guild.resting} resting {guild.resting === 1 ? 'card' : 'cards'}: review to put them back to work.
+              </span>
+            </>
+          )}
+        </p>
+        {guild.pending >= 1 && collected === 0 ? (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              setCollected(guild.pending)
+              update((s) => collectGold(s, studyWords(s), new Date()))
+            }}
+          >
+            Collect
+          </button>
+        ) : (
+          <button type="button" className="secondary" onClick={() => onOpen('play')}>
+            Guild
+          </button>
+        )}
+      </section>
+
+      <section className="callout read-callout">
+        <p>
+          <strong>Reading manga?</strong> Photograph a page and tap the words you want to learn.
+        </p>
+        <button type="button" className="secondary" onClick={() => onOpen('read')}>
+          Read a page
+        </button>
+      </section>
 
       <h2 className="section-title">Vocabulary</h2>
       <div className="stats">

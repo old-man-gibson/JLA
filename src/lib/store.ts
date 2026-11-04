@@ -1,4 +1,4 @@
-import type { AppState, Settings } from './types'
+import type { AppState, GuildState, RunStats, Settings } from './types'
 
 const KEY = 'nihongo:v1'
 
@@ -6,10 +6,29 @@ export const DEFAULT_SETTINGS: Settings = {
   newWordsPerDay: 5,
   furigana: 'auto',
   autoplayAudio: true,
+  decks: ['starter', 'adventurer'],
+}
+
+export function defaultGuild(now = new Date()): GuildState {
+  return { gold: 0, lastCollect: now.toISOString(), buildings: {}, perks: {} }
+}
+
+export function defaultRuns(): RunStats {
+  return { best: 0, bestWave: 0, history: [] }
 }
 
 export function defaultState(): AppState {
-  return { version: 1, settings: { ...DEFAULT_SETTINGS }, words: {}, cards: {}, log: [], kana: {} }
+  return {
+    version: 1,
+    settings: { ...DEFAULT_SETTINGS },
+    words: {},
+    cards: {},
+    log: [],
+    kana: {},
+    customWords: {},
+    guild: defaultGuild(),
+    runs: defaultRuns(),
+  }
 }
 
 /** Fills in anything missing from older or hand-edited saves. */
@@ -25,6 +44,9 @@ export function normalizeState(raw: unknown): AppState {
     cards: data.cards ?? {},
     log: Array.isArray(data.log) ? data.log : [],
     kana: data.kana ?? {},
+    customWords: data.customWords ?? {},
+    guild: { ...defaultGuild(), ...data.guild },
+    runs: { ...defaultRuns(), ...data.runs },
   }
 }
 

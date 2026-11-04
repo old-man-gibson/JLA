@@ -10,9 +10,14 @@ export interface Word {
    */
   sentence: string
   translation: string
+  /** Dictionary form, when the word appears conjugated in its sentence (manga words). */
+  lemma?: string
+  lemmaReading?: string
+  /** Where a word the learner added came from, e.g. a manga title. */
+  source?: string
 }
 
-type Row = [word: string, reading: string, meaning: string, sentence: string, translation: string]
+export type Row = [word: string, reading: string, meaning: string, sentence: string, translation: string]
 
 // A hand-written starter deck of very common beginner (JLPT N5-level) words,
 // roughly ordered by usefulness. It is meant to be replaced by a larger
@@ -82,13 +87,15 @@ const ROWS: Row[] = [
   ['テレビ', 'テレビ', 'TV', '[[テレビ]]を{消|け}してください。', 'Please turn off the TV.'],
 ]
 
-export const DECK: Word[] = ROWS.map(([word, reading, meaning, sentence, translation]) => ({
-  id: word,
-  word,
-  reading,
-  meaning,
-  sentence,
-  translation,
-}))
+export function wordsFromRows(rows: Row[]): Word[] {
+  return rows.map(([word, reading, meaning, sentence, translation]) => ({
+    id: word,
+    word,
+    reading,
+    meaning,
+    sentence,
+    translation,
+  }))
+}
 
-export const WORDS_BY_ID: Record<string, Word> = Object.fromEntries(DECK.map((w) => [w.id, w]))
+export const STARTER_WORDS: Word[] = wordsFromRows(ROWS)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { KANA } from '../data/kana'
-import { WORDS_BY_ID } from '../data/deck'
+import { BUILTIN_BY_ID as WORDS_BY_ID } from '../data/decks'
 import { isKanaAnswerCorrect, isReadingCorrect } from './answer'
 
 const kana = (k: string) => KANA.find((x) => x.kana === k)!

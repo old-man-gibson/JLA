@@ -2,27 +2,35 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { connectCloud, type CloudStore } from './lib/cloud'
 import { loadState, requestPersistentStorage, saveState } from './lib/store'
 import type { AppState } from './lib/types'
+import type { RunOptions } from './lib/run'
 import { Kana } from './views/Kana'
+import { NightWatch } from './views/NightWatch'
+import { Play } from './views/Play'
+import { Reader } from './views/Reader'
 import { Review } from './views/Review'
 import { SettingsView, type SyncStatus } from './views/SettingsView'
 import { Today } from './views/Today'
 import { Words } from './views/Words'
 
-type Tab = 'today' | 'kana' | 'words' | 'settings'
+type Tab = 'today' | 'read' | 'kana' | 'play' | 'words' | 'settings'
 
 const TABS: { id: Tab; label: string; ja: string }[] = [
   { id: 'today', label: 'Today', ja: '今日' },
+  { id: 'read', label: 'Read', ja: '読む' },
   { id: 'kana', label: 'Kana', ja: 'かな' },
+  { id: 'play', label: 'Play', ja: '遊ぶ' },
   { id: 'words', label: 'Words', ja: '単語' },
   { id: 'settings', label: 'Settings', ja: '設定' },
 ]
+
+type Mode = { kind: 'tabs' } | { kind: 'review' } | { kind: 'run'; options: RunOptions }
 
 const CLOUD_SAVE_DELAY_MS = 1500
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadState)
   const [tab, setTab] = useState<Tab>('today')
-  const [reviewing, setReviewing] = useState(false)
+  const [mode, setMode] = useState<Mode>({ kind: 'tabs' })
   const [saveFailed, setSaveFailed] = useState(false)
   const [sync, setSync] = useState<SyncStatus>('connecting')
 
@@ -128,10 +136,20 @@ export default function App() {
           closing.
         </p>
       )}
-      {reviewing ? (
+      {mode.kind === 'review' ? (
         <main className="main">
-          <Review state={state} update={update} onExit={() => setReviewing(false)} />
+          <Review state={state} update={update} onExit={() => setMode({ kind: 'tabs' })} />
         </main>
+      ) : mode.kind === 'run' ? (
+        <NightWatch
+          state={state}
+          update={update}
+          options={mode.options}
+          onExit={() => {
+            setMode({ kind: 'tabs' })
+            setTab('play')
+          }}
+        />
       ) : (
         <>
           <nav className="tabs" aria-label="Sections">
@@ -157,10 +175,24 @@ export default function App() {
           </nav>
           <main className="main">
             {tab === 'today' && (
-              <Today state={state} onStartReview={() => setReviewing(true)} onOpenKana={() => setTab('kana')} />
+              <Today
+                state={state}
+                update={update}
+                onStartReview={() => setMode({ kind: 'review' })}
+                onOpen={(t) => setTab(t)}
+              />
             )}
+            {tab === 'read' && <Reader state={state} update={update} />}
             {tab === 'kana' && <Kana state={state} update={update} />}
-            {tab === 'words' && <Words state={state} />}
+            {tab === 'play' && (
+              <Play
+                state={state}
+                update={update}
+                onStartRun={(options) => setMode({ kind: 'run', options })}
+                onStartReview={() => setMode({ kind: 'review' })}
+              />
+            )}
+            {tab === 'words' && <Words state={state} update={update} />}
             {tab === 'settings' && <SettingsView state={state} update={update} sync={sync} />}
           </main>
         </>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Rating, State } from 'ts-fsrs'
-import { DECK } from '../data/deck'
+import { STARTER_WORDS as DECK } from '../data/deck'
 import {
   cardId,
   computeStats,

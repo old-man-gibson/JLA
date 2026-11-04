@@ -122,3 +122,24 @@ export async function connectCloud(): Promise<CloudStore | null> {
     },
   }
 }
+
+export interface ImageLimits {
+  maxCount: number
+  maxInputBytes: number
+  mediaTypes: string[]
+}
+
+/** The parts of the platform's `sample` capability (ask Claude) this app uses. */
+export interface Sample {
+  json<T = unknown>(
+    input: string,
+    options?: { images?: Blob[]; signal?: AbortSignal; modelTier?: 'quick' | 'default' | 'complex' },
+  ): Promise<T>
+  limits(): Promise<{ images?: ImageLimits }>
+}
+
+/** What the `sample` capability rejects with. */
+export interface SampleError {
+  code: string
+  message: string
+}

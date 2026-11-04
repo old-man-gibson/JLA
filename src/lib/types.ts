@@ -1,4 +1,6 @@
 import type { Card, Grade, State } from 'ts-fsrs'
+import type { Word } from '../data/deck'
+import type { DeckId } from '../data/decks'
 
 /** An FSRS card as stored in JSON (dates become ISO strings). */
 export type StoredFsrsCard = Omit<Card, 'due' | 'last_review'> & {
@@ -46,6 +48,36 @@ export interface Settings {
   /** auto: furigana on the question side until a card is mature (21+ days). */
   furigana: FuriganaMode
   autoplayAudio: boolean
+  /** Built-in decks new words are drawn from. Words already started keep being reviewed either way. */
+  decks: DeckId[]
+}
+
+/** A word the learner added from the manga reader. */
+export interface CustomWord extends Word {
+  addedAt: string
+}
+
+export interface GuildState {
+  /** Gold collected and ready to spend. */
+  gold: number
+  /** Gold accrues from this moment until the next collection. */
+  lastCollect: string
+  buildings: Record<string, number>
+  /** Permanent upgrades for Night Watch runs. */
+  perks: Record<string, number>
+}
+
+export interface RunRecord {
+  at: string
+  score: number
+  wave: number
+  kills: number
+}
+
+export interface RunStats {
+  best: number
+  bestWave: number
+  history: RunRecord[]
 }
 
 export interface AppState {
@@ -58,4 +90,7 @@ export interface AppState {
   cards: Record<string, StudyCard>
   log: ReviewLogEntry[]
   kana: Record<string, KanaStat>
+  customWords: Record<string, CustomWord>
+  guild: GuildState
+  runs: RunStats
 }

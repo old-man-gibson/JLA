@@ -3,7 +3,7 @@ import { Rating, type Grade } from 'ts-fsrs'
 import { bind, unbind } from 'wanakana'
 import { AudioButton } from '../components/AudioButton'
 import { Sentence } from '../components/Sentence'
-import { DECK, WORDS_BY_ID, type Word } from '../data/deck'
+import type { Word } from '../data/deck'
 import { useKeys } from '../hooks/useKeys'
 import { finalizeKanaInput, isReadingCorrect } from '../lib/answer'
 import { plainText } from '../lib/furigana'
@@ -18,6 +18,7 @@ import {
   queueCounts,
 } from '../lib/srs'
 import type { AppState, Settings, StudyCard } from '../lib/types'
+import { findWord, studyWords } from '../lib/words'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
@@ -29,8 +30,9 @@ interface Props {
 
 export function Review({ state, update, onExit }: Props) {
   const [now, setNow] = useState(() => new Date())
-  const item = useMemo(() => nextItem(state, DECK, now), [state, now])
-  const counts = useMemo(() => queueCounts(state, DECK, now), [state, now])
+  const words = useMemo(() => studyWords(state), [state])
+  const item = useMemo(() => nextItem(state, words, now), [state, words, now])
+  const counts = useMemo(() => queueCounts(state, words, now), [state, words, now])
 
   // Only re-check the clock while waiting, so the card never changes under you mid-answer.
   useEffect(() => {
@@ -59,7 +61,8 @@ export function Review({ state, update, onExit }: Props) {
     )
   } else if (item.type === 'card') {
     const card = item.card
-    const word = WORDS_BY_ID[card.wordId]
+    // nextItem only returns cards of words in the study list, so the word exists.
+    const word = findWord(state, card.wordId)!
     const onGrade = (rating: Grade) => apply((s, at) => gradeCard(s, card.id, rating, at))
     const key = `${card.id}:${card.fsrs.reps}:${card.fsrs.due}`
     body =
@@ -95,6 +98,21 @@ function useFurigana(settings: Settings, card?: StudyCard) {
   return { front, back }
 }
 
+function WordExtras({ word }: { word: Word }) {
+  if (!word.lemma && !word.source) return null
+  return (
+    <p className="word-extras">
+      {word.lemma && word.lemma !== word.word && (
+        <span>
+          Dictionary form: <span lang="ja">{word.lemma}</span>
+          {word.lemmaReading && word.lemmaReading !== word.lemma && <span lang="ja"> ({word.lemmaReading})</span>}
+        </span>
+      )}
+      {word.source && <span className="source-tag">From {word.source}</span>}
+    </p>
+  )
+}
+
 function speakWord(word: Word) {
   speak(word.reading, plainText(word.sentence))
 }
@@ -126,6 +144,7 @@ function NewWord({ word, settings, onStart }: { word: Word; settings: Settings; 
         </p>
       )}
       <p className="meaning">{word.meaning}</p>
+      <WordExtras word={word} />
       <div className="example">
         <Sentence source={word.sentence} furigana={settings.furigana !== 'never'} />
         <AudioButton texts={[plainText(word.sentence)]} label="Play sentence" />
@@ -202,6 +221,7 @@ function RecognizeCard({ card, word, settings, onGrade }: CardProps) {
               </p>
             )}
             <p className="meaning">{word.meaning}</p>
+            <WordExtras word={word} />
             <div className="example-translation">
               <p className="translation">{word.translation}</p>
               <AudioButton texts={[plainText(word.sentence)]} label="Play sentence" />
@@ -301,6 +321,7 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
                 {word.reading}
               </p>
             )}
+            <WordExtras word={word} />
             {!result.correct && (
               <p className="you-typed">
                 You typed <span lang="ja">{result.typed}</span>
