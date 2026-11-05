@@ -1,6 +1,6 @@
 import { State } from 'ts-fsrs'
 import type { Word } from '../data/deck'
-import { MATURE_DAYS } from './srs'
+import { cardsInDeck, MATURE_DAYS } from './srs'
 import type { AppState, StudyCard } from './types'
 
 // The idle layer. Every card you have learned is an adventurer working for
@@ -119,8 +119,7 @@ export function rankFor(matureCards: number): { rank: Rank; next?: Rank } {
 }
 
 export function guildReport(state: AppState, words: Word[], now: Date): GuildReport {
-  const ids = new Set(words.map((w) => w.id))
-  const cards = Object.values(state.cards).filter((c) => ids.has(c.wordId))
+  const cards = cardsInDeck(state, words)
   let base = 0
   let working = 0
   let resting = 0

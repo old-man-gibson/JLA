@@ -13,10 +13,22 @@ const SESSION_SIZE = 20
 const SCRIPTS: Script[] = ['hiragana', 'katakana']
 const GROUPS: KanaGroup[] = ['basic', 'dakuten', 'combo']
 
-export function Kana({ state, update }: { state: AppState; update: Update }) {
+export function Kana({
+  state,
+  update,
+  onDrilling,
+}: {
+  state: AppState
+  update: Update
+  /** Tells the parent a drill started or ended, so it can hide its header and keep the keys on screen. */
+  onDrilling?: (drilling: boolean) => void
+}) {
   const [scripts, setScripts] = useState<Script[]>(['hiragana'])
   const [groups, setGroups] = useState<KanaGroup[]>(['basic'])
   const [session, setSession] = useState<{ id: number; items: KanaItem[] } | null>(null)
+  useEffect(() => {
+    onDrilling?.(session !== null)
+  }, [session, onDrilling])
 
   const pool = kanaFor(scripts, groups)
   const start = () =>
@@ -42,9 +54,6 @@ export function Kana({ state, update }: { state: AppState; update: Update }) {
 
   return (
     <div className="page">
-      <h1>
-        <span lang="ja">かな</span> Kana
-      </h1>
       <p className="lead">
         See a kana, type its romaji. A kana counts as fluent after {FLUENT_STREAK} correct answers in a row, each under{' '}
         {FLUENT_MS / 1000} seconds. Drills favour the ones you miss or hesitate on.

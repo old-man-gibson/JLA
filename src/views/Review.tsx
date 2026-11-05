@@ -4,7 +4,8 @@ import { bind, unbind } from 'wanakana'
 import { AudioButton } from '../components/AudioButton'
 import { Keypad } from '../components/Keypad'
 import { resolveLayout } from '../lib/keypadLayouts'
-import { Sentence } from '../components/Sentence'
+import { Ruby, Sentence } from '../components/Sentence'
+import { EXERCISE_BY_ID, GRAMMAR_BY_ID, type GrammarExercise } from '../data/grammar'
 import type { Word } from '../data/deck'
 import { useKeys } from '../hooks/useKeys'
 import { finalizeKanaInput, isReadingCorrect } from '../lib/answer'
@@ -62,6 +63,18 @@ export function Review({ state, update, onExit }: Props) {
         onStart={() => apply((s, at) => introduceWord(s, item.word.id, at))}
       />
     )
+  } else if (item.type === 'card' && item.card.kind === 'grammar') {
+    const card = item.card
+    const onGrade = (rating: Grade) => apply((s, at) => gradeCard(s, card.id, rating, at))
+    body = (
+      <GrammarCard
+        key={`${card.id}:${card.fsrs.reps}:${card.fsrs.due}`}
+        card={card}
+        exercise={EXERCISE_BY_ID[card.wordId]}
+        settings={state.settings}
+        onGrade={onGrade}
+      />
+    )
   } else if (item.type === 'card') {
     const card = item.card
     // nextItem only returns cards of words in the study list, so the word exists.
@@ -85,7 +98,9 @@ export function Review({ state, update, onExit }: Props) {
           ← Done
         </button>
         <div className="counts" aria-label="Remaining">
-          <span className="count new" title="New words left today">{counts.newWords} new</span>
+          <span className="count new" title="New words and grammar exercises">
+            {counts.newWords + counts.newGrammar} new
+          </span>
           <span className="count learning" title="Cards in learning">{counts.learning} learning</span>
           <span className="count review-count" title="Reviews due">{counts.review} due</span>
         </div>
@@ -365,6 +380,85 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
               </button>
             </div>
           )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+/** A fill-the-gap grammar exercise: pick the form that completes the sentence. */
+function GrammarCard({
+  card,
+  exercise,
+  settings,
+  onGrade,
+}: {
+  card: StudyCard
+  exercise: GrammarExercise & { pointId: string }
+  settings: Settings
+  onGrade: (rating: Grade) => void
+}) {
+  const furigana = useFurigana(settings, card)
+  const grade = useOnce(onGrade)
+  const [options] = useState(() => shuffled(exercise.options))
+  const [choice, setChoice] = useState<string | null>(null)
+  const answer = /\[\[(.+?)\]\]/.exec(exercise.sentence)?.[1] ?? ''
+  const correct = choice === answer
+  const point = GRAMMAR_BY_ID[exercise.pointId]
+
+  const choose = (option: string) => {
+    if (choice) return
+    setChoice(option)
+    if (settings.autoplayAudio) speak(plainText(exercise.sentence))
+  }
+  const next = () => grade(correct ? Rating.Good : Rating.Again)
+  useKeys(
+    choice
+      ? { Enter: next, ' ': next }
+      : Object.fromEntries(options.map((o, i) => [String(i + 1), () => choose(o)])),
+  )
+
+  return (
+    <section className="study-card">
+      <p className="card-tag">Grammar · {point?.title}</p>
+      <Sentence
+        source={exercise.sentence}
+        furigana={choice ? furigana.back : furigana.front}
+        target={choice ? 'highlight' : 'blank'}
+        className="front-sentence"
+      />
+      <p className="translation">{exercise.translation}</p>
+      <div className="choices" role="group" aria-label="Choose the missing part">
+        {options.map((o, i) => {
+          const state = !choice ? '' : o === answer ? 'right' : o === choice ? 'wrong' : 'dim'
+          return (
+            <button key={o} type="button" className={`choice ${state}`} onClick={() => choose(o)} disabled={choice !== null}>
+              <Ruby source={o} furigana={furigana.back} />
+              <kbd>{i + 1}</kbd>
+            </button>
+          )
+        })}
+      </div>
+      {choice && (
+        <div className="result-block">
+          <div className={`verdict ${correct ? 'right' : 'wrong'}`}>{correct ? 'Correct' : 'Not quite'}</div>
+          <p className="why">{exercise.why}</p>
+          <div className="example-translation">
+            <span className="muted small">Hear the sentence</span>
+            <AudioButton texts={[plainText(exercise.sentence)]} label="Play sentence" />
+          </div>
+          <button type="button" className="primary wide" onClick={next} autoFocus>
+            Continue <kbd>Enter</kbd>
+          </button>
         </div>
       )}
     </section>

@@ -30,6 +30,8 @@ export function defaultState(): AppState {
     customWords: {},
     guild: defaultGuild(),
     runs: defaultRuns(),
+    grammar: {},
+    storiesRead: {},
   }
 }
 
@@ -49,6 +51,8 @@ export function normalizeState(raw: unknown): AppState {
     customWords: data.customWords ?? {},
     guild: { ...defaultGuild(), ...data.guild },
     runs: { ...defaultRuns(), ...data.runs },
+    grammar: data.grammar ?? {},
+    storiesRead: data.storiesRead ?? {},
   }
 }
 

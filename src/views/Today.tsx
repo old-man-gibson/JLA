@@ -10,7 +10,7 @@ interface Props {
   state: AppState
   update: (fn: (s: AppState) => AppState) => void
   onStartReview: () => void
-  onOpen: (tab: 'kana' | 'read' | 'play') => void
+  onOpen: (tab: 'kana' | 'grammar' | 'stories' | 'read' | 'play') => void
 }
 
 export function Today({ state, update, onStartReview, onOpen }: Props) {
@@ -20,7 +20,7 @@ export function Today({ state, update, onStartReview, onOpen }: Props) {
   const counts = queueCounts(state, words, now)
   const stats = computeStats(state, words, now)
   const next = nextItem(state, words, now)
-  const due = counts.learning + counts.review
+  const due = counts.learning + counts.review + counts.newGrammar
   const hasWork = next.type !== 'done'
   const guild = guildReport(state, words, now)
   const [collected, setCollected] = useState(0)

@@ -60,3 +60,21 @@ export function WordRuby({ word, furigana }: { word: Word; furigana: boolean }) 
     </span>
   )
 }
+
+/** Inline text with furigana markup, for short snippets like answer options. */
+export function Ruby({ source, furigana }: { source: string; furigana: boolean }) {
+  return (
+    <span lang="ja">
+      {parseSentence(source).map((seg, i) =>
+        seg.ruby && furigana ? (
+          <ruby key={i}>
+            {seg.text}
+            <rt>{seg.ruby}</rt>
+          </ruby>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        ),
+      )}
+    </span>
+  )
+}

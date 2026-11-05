@@ -4,7 +4,7 @@ import { RELEASES_URL, shellOutdated } from './lib/platform'
 import { loadState, requestPersistentStorage, saveState } from './lib/store'
 import type { AppState } from './lib/types'
 import type { RunOptions } from './lib/run'
-import { Kana } from './views/Kana'
+import { Learn, type LearnSection } from './views/Learn'
 import { NightWatch } from './views/NightWatch'
 import { Play } from './views/Play'
 import { Reader } from './views/Reader'
@@ -13,12 +13,12 @@ import { SettingsView, type SyncStatus } from './views/SettingsView'
 import { Today } from './views/Today'
 import { Words } from './views/Words'
 
-type Tab = 'today' | 'read' | 'kana' | 'play' | 'words' | 'settings'
+type Tab = 'today' | 'learn' | 'read' | 'play' | 'words' | 'settings'
 
 const TABS: { id: Tab; label: string; ja: string }[] = [
   { id: 'today', label: 'Today', ja: '今日' },
+  { id: 'learn', label: 'Learn', ja: '学ぶ' },
   { id: 'read', label: 'Read', ja: '読む' },
-  { id: 'kana', label: 'Kana', ja: 'かな' },
   { id: 'play', label: 'Play', ja: '遊ぶ' },
   { id: 'words', label: 'Words', ja: '単語' },
   { id: 'settings', label: 'Settings', ja: '設定' },
@@ -32,6 +32,7 @@ export default function App() {
   const [state, setState] = useState<AppState>(loadState)
   const [tab, setTab] = useState<Tab>('today')
   const [mode, setMode] = useState<Mode>({ kind: 'tabs' })
+  const [learnSection, setLearnSection] = useState<LearnSection>('kana')
   const [saveFailed, setSaveFailed] = useState(false)
   const [sync, setSync] = useState<SyncStatus>('connecting')
 
@@ -187,11 +188,24 @@ export default function App() {
                 state={state}
                 update={update}
                 onStartReview={() => setMode({ kind: 'review' })}
-                onOpen={(t) => setTab(t)}
+                onOpen={(t) => {
+                  if (t === 'kana' || t === 'grammar' || t === 'stories') {
+                    setLearnSection(t)
+                    setTab('learn')
+                  } else setTab(t)
+                }}
               />
             )}
             {tab === 'read' && <Reader state={state} update={update} />}
-            {tab === 'kana' && <Kana state={state} update={update} />}
+            {tab === 'learn' && (
+              <Learn
+                state={state}
+                update={update}
+                section={learnSection}
+                onSection={setLearnSection}
+                onStartReview={() => setMode({ kind: 'review' })}
+              />
+            )}
             {tab === 'play' && (
               <Play
                 state={state}

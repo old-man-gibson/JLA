@@ -1,5 +1,6 @@
 import { createEmptyCard, fsrs, Rating, State, type Card, type Grade } from 'ts-fsrs'
 import type { Word } from '../data/deck'
+import { EXERCISE_BY_ID, GRAMMAR_BY_ID } from '../data/grammar'
 import type { AppState, CardKind, StoredFsrsCard, StudyCard } from './types'
 
 /** FSRS with the default 90% target retention and learning steps of 1m, 10m. */
@@ -59,10 +60,41 @@ export function newWordsLeftToday(state: AppState, deck: Word[], now: Date): num
   return Math.min(remaining, allowance)
 }
 
-/** Cards whose word is still in the deck (a word may be removed from the deck in an update). */
-function cardsInDeck(state: AppState, deck: Word[]): StudyCard[] {
+/**
+ * Cards to study: those of words still in the study list (a word may leave the
+ * deck in an update) plus grammar exercises that still exist.
+ */
+export function cardsInDeck(state: AppState, deck: Word[]): StudyCard[] {
   const ids = new Set(deck.map((w) => w.id))
-  return Object.values(state.cards).filter((c) => ids.has(c.wordId))
+  return Object.values(state.cards).filter((c) =>
+    c.kind === 'grammar' ? Boolean(EXERCISE_BY_ID[c.wordId]) : ids.has(c.wordId),
+  )
+}
+
+/** Adds a card for each of a grammar point's exercises. They're due straight away. */
+export function startGrammarPoint(state: AppState, pointId: string, now: Date): AppState {
+  const point = GRAMMAR_BY_ID[pointId]
+  if (!point) return state
+  const cards = { ...state.cards }
+  for (const exercise of point.exercises) {
+    if (!cards[exercise.id]) {
+      cards[exercise.id] = { id: exercise.id, wordId: exercise.id, kind: 'grammar', fsrs: fromCard(createEmptyCard(now)) }
+    }
+  }
+  return {
+    ...state,
+    cards,
+    grammar: { ...state.grammar, [pointId]: state.grammar[pointId] ?? { startedAt: now.toISOString() } },
+  }
+}
+
+export type GrammarStatus = 'unseen' | 'learning' | 'known'
+
+export function grammarStatus(state: AppState, pointId: string): GrammarStatus {
+  const point = GRAMMAR_BY_ID[pointId]
+  if (!point || !state.grammar[pointId]) return 'unseen'
+  const cards = point.exercises.map((e) => state.cards[e.id]).filter(Boolean)
+  return cards.length > 0 && cards.every((c) => c.fsrs.state === State.Review) ? 'known' : 'learning'
 }
 
 export type NextItem =
@@ -164,6 +196,8 @@ export interface QueueCounts {
   learning: number
   review: number
   newCards: number
+  /** New grammar exercises from points the learner started. */
+  newGrammar: number
   /** Words still to be learned today: not yet introduced, or introduced with a card not yet seen. */
   newWords: number
 }
@@ -175,9 +209,10 @@ export function queueCounts(state: AppState, deck: Word[], now: Date): QueueCoun
     learning: due.filter((c) => c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning).length,
     review: due.filter((c) => c.fsrs.state === State.Review).length,
     newCards: due.filter((c) => c.fsrs.state === State.New).length,
+    newGrammar: due.filter((c) => c.kind === 'grammar' && c.fsrs.state === State.New).length,
     newWords:
       newWordsLeftToday(state, deck, now) +
-      new Set(due.filter((c) => c.fsrs.state === State.New).map((c) => c.wordId)).size,
+      new Set(due.filter((c) => c.kind !== 'grammar' && c.fsrs.state === State.New).map((c) => c.wordId)).size,
   }
 }
 

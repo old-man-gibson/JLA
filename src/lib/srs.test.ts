@@ -97,3 +97,20 @@ describe('helpers', () => {
     expect(() => importState('{"version":2}')).toThrow()
   })
 })
+
+describe('grammar cards', () => {
+  it('starting a point adds its exercises to the review queue, after due words', async () => {
+    const { GRAMMAR_BY_ID } = await import('../data/grammar')
+    const { startGrammarPoint, grammarStatus, queueCounts } = await import('./srs')
+    const now = at('2026-01-05T10:00:00')
+    let s = startGrammarPoint(defaultState(), 'wa', now)
+    expect(grammarStatus(s, 'wa')).toBe('learning')
+    expect(queueCounts(s, DECK, now).newGrammar).toBe(GRAMMAR_BY_ID.wa.exercises.length)
+    const item = nextItem(s, DECK, now)
+    expect(item.type === 'card' && item.card.kind).toBe('grammar')
+    // Starting twice doesn't duplicate or reset cards.
+    s = gradeCard(s, 'g:wa:1', Rating.Good, now)
+    const again = startGrammarPoint(s, 'wa', now)
+    expect(again.cards['g:wa:1']).toEqual(s.cards['g:wa:1'])
+  })
+})

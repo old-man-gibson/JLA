@@ -13,7 +13,8 @@ export type StoredFsrsCard = Omit<Card, 'due' | 'last_review'> & {
  * - recognize: see the Japanese, recall the reading and meaning.
  * - produce: see the meaning in a sentence, type the Japanese.
  */
-export type CardKind = 'recognize' | 'produce'
+/** Words have recognize and produce cards; grammar exercises have one grammar card each. */
+export type CardKind = 'recognize' | 'produce' | 'grammar'
 
 export interface StudyCard {
   id: string
@@ -97,4 +98,8 @@ export interface AppState {
   customWords: Record<string, CustomWord>
   guild: GuildState
   runs: RunStats
+  /** Grammar points the learner has started practising. */
+  grammar: Record<string, { startedAt: string }>
+  /** Built-in stories the learner has finished, with when. */
+  storiesRead: Record<string, string>
 }
