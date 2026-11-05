@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { KANA } from '../data/kana'
 import { kanaLevel } from '../lib/kanaDrill'
+import { GRAMMAR } from '../data/grammar'
+import { STORIES } from '../data/stories'
 import { collectGold, formatGold, guildReport } from '../lib/guild'
-import { computeStats, formatInterval, nextItem, queueCounts } from '../lib/srs'
+import { computeStats, dayStart, formatInterval, nextItem, queueCounts } from '../lib/srs'
 import type { AppState } from '../lib/types'
 import { studyWords } from '../lib/words'
 
@@ -31,7 +33,65 @@ export function Today({ state, update, onStartReview, onOpen }: Props) {
   }
   const hira = fluent('hiragana')
   const kata = fluent('katakana')
-  const kanaFirst = hira.fluent < 46
+  const basicHiragana = KANA.filter((k) => k.script === 'hiragana' && k.group === 'basic')
+  const basicFluent = basicHiragana.filter((k) => kanaLevel(state.kana[k.kana]) === 'fluent').length
+  const kanaFirst = basicFluent < basicHiragana.length
+
+  // A short, ordered list of what to do today. Steps tick off as they're done.
+  const todayStart = dayStart(now).toISOString()
+  const kanaToday = Object.values(state.kana).some((k) => k.lastSeen >= todayStart)
+  const nextGrammar = GRAMMAR.find((g) => !state.grammar[g.id])
+  const grammarToday = Object.values(state.grammar).some((g) => g.startedAt >= todayStart)
+  const nextStory = STORIES.find((st) => !state.storiesRead[st.id])
+  const storyToday = Object.values(state.storiesRead).some((at) => at >= todayStart)
+  const plan: { id: string; title: string; detail: string; action: string; done: boolean; go: () => void }[] = [
+    {
+      id: 'review',
+      title: 'Reviews and new words',
+      detail: hasWork
+        ? `${due} due, ${counts.newWords} new ${counts.newWords === 1 ? 'word' : 'words'}`
+        : 'All done for now',
+      action: 'Start',
+      done: !hasWork,
+      go: onStartReview,
+    },
+    ...(kanaFirst
+      ? [
+          {
+            id: 'kana',
+            title: 'Kana drill',
+            detail: `${basicFluent} of ${basicHiragana.length} basic hiragana fluent. Reading kana without effort makes everything easier.`,
+            action: 'Drill',
+            done: kanaToday,
+            go: () => onOpen('kana'),
+          },
+        ]
+      : []),
+    ...(nextGrammar || grammarToday
+      ? [
+          {
+            id: 'grammar',
+            title: 'A grammar point',
+            detail: grammarToday ? 'Started one today' : `Next: ${nextGrammar!.title}`,
+            action: 'Learn',
+            done: grammarToday,
+            go: () => onOpen('grammar'),
+          },
+        ]
+      : []),
+    ...(nextStory || storyToday
+      ? [
+          {
+            id: 'story',
+            title: 'Read a story',
+            detail: storyToday ? 'Read one today' : `Next: ${nextStory!.titleEn}`,
+            action: 'Read',
+            done: storyToday,
+            go: () => onOpen('stories'),
+          },
+        ]
+      : []),
+  ]
 
   return (
     <div className="page">
@@ -60,17 +120,29 @@ export function Today({ state, update, onStartReview, onOpen }: Props) {
         )}
       </section>
 
-      {kanaFirst && (
-        <section className="callout">
-          <p>
-            <strong>Make kana automatic first.</strong> Every word card uses kana, so reading it without effort makes
-            everything else easier.
-          </p>
-          <button type="button" className="secondary" onClick={() => onOpen('kana')}>
-            Practise kana
-          </button>
-        </section>
-      )}
+      <section className="plan" aria-label="Today’s plan">
+        <h2 className="section-title">
+          <span lang="ja">今日の予定</span> Today’s plan
+        </h2>
+        <ol className="plan-list">
+          {plan.map((step) => (
+            <li key={step.id} className={`plan-step ${step.done ? 'done' : ''}`}>
+              <span className="plan-check" aria-hidden="true">
+                {step.done ? '✓' : ''}
+              </span>
+              <span className="plan-text">
+                <strong>{step.title}</strong>
+                <span className="muted small">{step.detail}</span>
+              </span>
+              {!step.done && (
+                <button type="button" className="secondary plan-go" onClick={step.go}>
+                  {step.action}
+                </button>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="today-guild">
         <div className={`rank-badge rank-${guild.rank.id}`} aria-label={`Guild rank ${guild.rank.id}`}>

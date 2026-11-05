@@ -6,6 +6,7 @@ import { DECKS } from '../data/decks'
 import { cardId, formatInterval, wordStatus, type WordStatus } from '../lib/srs'
 import type { AppState } from '../lib/types'
 import { removeCustomWord } from '../lib/words'
+import { Kanji } from './Kanji'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
@@ -20,6 +21,7 @@ export function Words({ state, update }: { state: AppState; update: Update }) {
   // Captured once per visit; the screen remounts whenever you come back to it.
   const [now] = useState(() => new Date())
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
+  const [view, setView] = useState<'words' | 'kanji'>('words')
   const custom = Object.values(state.customWords).sort((a, b) => b.addedAt.localeCompare(a.addedAt))
 
   const row = (word: Word, removable: boolean) => {
@@ -74,11 +76,34 @@ export function Words({ state, update }: { state: AppState; update: Update }) {
     )
   }
 
-  return (
-    <div className="page">
+  const header = (
+    <>
       <h1>
         <span lang="ja">単語</span> Words
       </h1>
+      <div className="segmented" role="tablist" aria-label="Words or kanji">
+        <button type="button" role="tab" aria-selected={view === 'words'} className={`segment ${view === 'words' ? 'on' : ''}`} onClick={() => setView('words')}>
+          <span lang="ja">単語</span> Words
+        </button>
+        <button type="button" role="tab" aria-selected={view === 'kanji'} className={`segment ${view === 'kanji' ? 'on' : ''}`} onClick={() => setView('kanji')}>
+          <span lang="ja">漢字</span> Kanji
+        </button>
+      </div>
+    </>
+  )
+
+  if (view === 'kanji') {
+    return (
+      <div className="page">
+        {header}
+        <Kanji state={state} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="page">
+      {header}
       <p className="lead">
         New words come from your manga first, then one from each enabled deck in turn. Turn decks on or off in
         Settings.
