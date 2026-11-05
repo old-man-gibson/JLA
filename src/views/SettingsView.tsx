@@ -3,6 +3,7 @@ import { DECKS } from '../data/decks'
 import { resolveLayout } from '../lib/keypadLayouts'
 import { getCapability, type Downloads } from '../lib/cloud'
 import { androidShell } from '../lib/platform'
+import { decodeTransfer, encodeTransfer } from '../lib/transfer'
 import { defaultState, exportState, importState } from '../lib/store'
 import { speak, speechSupported, whenVoicesReady } from '../lib/speech'
 import type { AppState, FuriganaMode, Settings } from '../lib/types'
@@ -82,6 +83,32 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
       setMessage(null)
     } catch (err) {
       setMessage(`Could not read that file: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  const [code, setCode] = useState<string | null>(null)
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pastedCode, setPastedCode] = useState('')
+
+  const copyCode = async () => {
+    const text = await encodeTransfer(state)
+    setCode(text)
+    try {
+      await navigator.clipboard.writeText(text)
+      setMessage('Progress code copied. In the other version, open Settings → Paste a progress code.')
+    } catch {
+      setMessage('Copying isn’t allowed here. Select the code below and copy it.')
+    }
+  }
+
+  const loadCode = async () => {
+    try {
+      setPendingImport({ state: await decodeTransfer(pastedCode), name: 'the progress code' })
+      setPasteOpen(false)
+      setPastedCode('')
+      setMessage(null)
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'That code couldn’t be read.')
     }
   }
 
@@ -258,11 +285,58 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
           </button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={chooseBackup} />
         </div>
+        <p className="setting-help">
+          To move progress between the Android app and the claude.ai version, copy a progress code in one and paste it
+          into the other.
+        </p>
+        <div className="button-row">
+          <button type="button" className="secondary" onClick={() => void copyCode()}>
+            Copy progress code
+          </button>
+          <button type="button" className="secondary" onClick={() => setPasteOpen((v) => !v)}>
+            Paste a progress code
+          </button>
+        </div>
+        {code && (
+          <textarea
+            id="progress-code-out"
+            className="code-box"
+            readOnly
+            value={code}
+            rows={3}
+            onFocus={(e) => e.currentTarget.select()}
+            aria-label="Your progress code"
+          />
+        )}
+        {pasteOpen && (
+          <div className="confirm">
+            <label className="field">
+              <span className="field-label">Paste the code from the other version</span>
+              <textarea
+                id="progress-code-in"
+                className="code-box"
+                rows={3}
+                value={pastedCode}
+                onChange={(e) => setPastedCode(e.target.value)}
+                placeholder="JLA1…"
+              />
+            </label>
+            <div className="button-row">
+              <button type="button" className="primary" disabled={!pastedCode.trim()} onClick={() => void loadCode()}>
+                Load
+              </button>
+              <button type="button" className="secondary" onClick={() => setPasteOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
         {pendingImport && (
           <div className="confirm" role="alertdialog" aria-label="Confirm restore">
             <p>
               Replace all current progress with <strong>{pendingImport.name}</strong> (
-              {Object.keys(pendingImport.state.words).length} words started)?
+              {Object.keys(pendingImport.state.words).length}{' '}
+              {Object.keys(pendingImport.state.words).length === 1 ? 'word' : 'words'} started)?
             </p>
             <div className="button-row">
               <button type="button" className="primary" onClick={restore}>

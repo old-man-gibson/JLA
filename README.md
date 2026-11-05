@@ -60,7 +60,7 @@ On your phone, open [the latest release](https://github.com/old-man-gibson/JLA/r
 
 Notes:
 
-- Progress is stored on the phone, separately from the claude.ai version. Move it with Settings → Download backup / Restore from file.
+- Progress is stored on the phone, separately from the claude.ai version. Move it with Settings → Copy progress code in one and Paste a progress code in the other (or with a backup file).
 - The manga reader needs Claude, so it only works in the claude.ai version.
 - Alternatively, open the Pages site in Chrome and choose *Add to Home screen*: it installs the same app without an APK.
 
@@ -93,4 +93,4 @@ Notes:
 2. **Bigger deck.** Build a frequency-ordered deck with example sentences from [Tatoeba](https://tatoeba.org) (CC BY). JMdict and KANJIDIC are CC BY-SA and need attribution.
 3. **Kanji.** Component breakdowns ([KanjiVG](https://kanjivg.tagaini.net) for stroke order), always tied to vocabulary you're learning.
 4. **Pitch accent and better audio.** Pitch data from Kanjium, recorded or [VOICEVOX](https://voicevox.hiroshiba.jp) audio, and a shadowing mode.
-5. **Sync between the Android app and the claude.ai version**, which currently keep separate progress.
+5. **Automatic sync between the Android app and the claude.ai version** (today: progress codes or backup files).

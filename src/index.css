@@ -2519,3 +2519,15 @@ button:disabled {
 .quest-title {
   font-weight: 600;
 }
+
+.code-box {
+  width: 100%;
+  font: 0.8rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  word-break: break-all;
+  resize: vertical;
+}
