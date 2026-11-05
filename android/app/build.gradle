@@ -16,8 +16,8 @@ android {
         targetSdk 34
         // Bump versionCode whenever this shell changes: the web app compares it
         // with the installed app and offers the new APK when it's newer.
-        versionCode 1
-        versionName '1.0'
+        versionCode 2
+        versionName '1.1'
         buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
     }
 
