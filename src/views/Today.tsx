@@ -229,6 +229,45 @@ export function Today({ state, update, onStartReview, onOpen }: Props) {
         Recall rate is the number to watch: around 85–90% means the schedule is working. Much lower means too many new
         words at once.
       </p>
+
+      <details className="guide">
+        <summary>How to study with this app</summary>
+        <h3>Every day, 15–30 minutes</h3>
+        <ol>
+          <li>
+            <strong>Reviews first.</strong> Do them every day, even if it’s only five minutes. Skipping a day makes the
+            next one heavier, and overdue words stop earning guild gold.
+          </li>
+          <li>
+            <strong>New words.</strong> Five a day is a good pace: about 150 words a month without the reviews piling up.
+          </li>
+          <li>
+            <strong>One grammar point</strong> every day or two, in the order of the list.
+          </li>
+          <li>
+            <strong>Read something:</strong> a story, or a manga page in Read. This is where words turn into Japanese
+            you can actually understand.
+          </li>
+        </ol>
+        <h3>Doing it well</h3>
+        <ul>
+          <li>Until the basic hiragana are fluent, start each day with a kana drill. It makes everything else easier.</li>
+          <li>
+            Grade yourself honestly. Press Again when you hesitated or guessed: it only means the card comes back sooner.
+          </li>
+          <li>
+            In manga, add only the words you’d like to remember, three to five per page. The rest will come back
+            naturally.
+          </li>
+          <li>Extra time? Practice (forms, listening, kanji) and Night Watch train the same material from new angles.</li>
+        </ul>
+        <h3>Outside the app</h3>
+        <ul>
+          <li>Listen to beginner Japanese podcasts or YouTube channels made for learners while commuting or cooking.</li>
+          <li>Watch anime you already know with Japanese subtitles, and pause on lines you can read.</li>
+          <li>Switch a game you know well to Japanese. Item and menu text repeats constantly.</li>
+        </ul>
+      </details>
     </div>
   )
 }
