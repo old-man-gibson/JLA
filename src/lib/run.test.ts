@@ -8,6 +8,7 @@ import {
   chooseUpgrade,
   createRun,
   draftUpgrades,
+  formPrompts,
   learnedWords,
   matchTyped,
   prefixMatches,
@@ -147,6 +148,20 @@ describe('Night Watch rules', () => {
     expect(s.over).toBe(true)
     expect(s.maxHp).toBe(4)
     expect(s.gotThrough.length).toBeGreaterThan(0)
+  })
+
+  it('makes form yokai from reviewed verbs and adjectives', () => {
+    const now = new Date('2026-01-05T10:00:00Z')
+    let state = introduceWord(defaultState(), '書く', now)
+    state = gradeCard(state, cardId('書く', 'recognize'), Rating.Good, now)
+    const prompts = formPrompts(state)
+    expect(prompts.map((p) => p.display)).toEqual(['書く・ます', '書く・て', '書く・た', '書く・ない'])
+    expect(prompts.find((p) => p.display === '書く・て')?.answer).toBe('かいて')
+    const pool = buildPool(state, { scripts: ['hiragana'], words: false, forms: true })
+    expect(pool.words).toHaveLength(4)
+    const s = createRun({})
+    s.enemies = [enemy(1, prompts[1])]
+    expect(matchTyped(s, 'かいて', false)?.id).toBe(1)
   })
 
   it('builds a pool from kana scripts and words you have reviewed', () => {

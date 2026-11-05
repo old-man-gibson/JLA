@@ -1,5 +1,7 @@
 import { toKatakana } from 'wanakana'
 import { KANA, type Script } from '../data/kana'
+import { WORD_CLASSES } from '../data/wordClasses'
+import { conjugate, FORM_BY_ID, type FormId } from './conjugate'
 import { finalizeKanaInput } from './answer'
 import type { AppState } from './types'
 import { findWord } from './words'
@@ -96,11 +98,32 @@ export interface RunState {
 export interface Pool {
   kana: Prompt[]
   words: Prompt[]
+  /** Share of word yokai in the first wave (rises each wave). */
+  wordShare?: number
 }
 
 export interface RunOptions {
   scripts: Script[]
   words: boolean
+  /** Verb and adjective form yokai: 書く・て → かいて. */
+  forms?: boolean
+}
+
+const RUN_FORMS: FormId[] = ['masu', 'te', 'ta', 'nai', 'adj-nai', 'adj-katta']
+
+/** Form prompts for the verbs and adjectives you've reviewed: shown as "書く・て", answered with the reading. */
+export function formPrompts(state: AppState): Prompt[] {
+  return learnedWordIds(state).flatMap((id) => {
+    const cls = WORD_CLASSES[id]
+    const word = findWord(state, id)
+    if (!cls || !word) return []
+    return RUN_FORMS.flatMap((form) => {
+      const answer = conjugate(word.word, word.reading, cls, form)
+      if (!answer) return []
+      const short = FORM_BY_ID[form].ja.replace('〜', '')
+      return [{ display: `${word.word}・${short}`, answer: answer.reading, meaning: `${answer.word}: ${FORM_BY_ID[form].label}`, kind: 'word' as const }]
+    })
+  })
 }
 
 /** Kana from the chosen scripts (basic and dakuten, plus combinations you've practised) and words you've met. */
@@ -108,16 +131,22 @@ export function buildPool(state: AppState, options: RunOptions): Pool {
   const kana = KANA.filter(
     (k) => options.scripts.includes(k.script) && (k.group !== 'combo' || (state.kana[k.kana]?.seen ?? 0) > 0),
   ).map((k): Prompt => ({ display: k.kana, answer: k.kana, kind: 'kana' }))
-  const words = options.words ? learnedWords(state) : []
-  return { kana, words }
+  const words = [...(options.words ? learnedWords(state) : []), ...(options.forms ? formPrompts(state) : [])]
+  // Choosing verb forms means wanting to see them: more word yokai from the start.
+  return { kana, words, wordShare: options.forms ? 0.4 : 0.15 }
+}
+
+function learnedWordIds(state: AppState): string[] {
+  return Object.keys(state.words).filter((id) =>
+    Object.values(state.cards).some((c) => c.wordId === id && c.fsrs.reps > 0),
+  )
 }
 
 /** Words whose cards you have seen at least once. */
 export function learnedWords(state: AppState): Prompt[] {
-  return Object.keys(state.words).flatMap((id) => {
-    const seen = Object.values(state.cards).some((c) => c.wordId === id && c.fsrs.reps > 0)
+  return learnedWordIds(state).flatMap((id) => {
     const word = findWord(state, id)
-    return seen && word ? [{ display: word.word, answer: word.reading, meaning: word.meaning, kind: 'word' as const }] : []
+    return word ? [{ display: word.word, answer: word.reading, meaning: word.meaning, kind: 'word' as const }] : []
   })
 }
 
@@ -182,7 +211,8 @@ function pickPrompt(s: RunState, list: Prompt[], rng: () => number): Prompt {
 }
 
 function spawn(s: RunState, pool: Pool, rng: () => number, kind?: EnemyKind) {
-  const wordChance = pool.words.length > 0 ? Math.min(0.6, 0.15 + 0.07 * (s.wave - 1)) : 0
+  const share = pool.wordShare ?? 0.15
+  const wordChance = pool.words.length > 0 ? Math.min(Math.max(0.6, share), share + 0.07 * (s.wave - 1)) : 0
   const type: EnemyKind = kind ?? (rng() < wordChance ? 'oni' : 'wisp')
   let prompt: Prompt
   let queue: Prompt[] = []

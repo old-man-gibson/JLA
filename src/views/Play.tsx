@@ -13,7 +13,7 @@ import {
   perkCost,
 } from '../lib/guild'
 import { claimQuest, questStatuses } from '../lib/quests'
-import { learnedWords, type RunOptions } from '../lib/run'
+import { formPrompts, learnedWords, type RunOptions } from '../lib/run'
 import type { AppState } from '../lib/types'
 import { studyWords } from '../lib/words'
 
@@ -36,6 +36,9 @@ export function Play({ state, update, onStartRun, onStartReview }: Props) {
   const report = guildReport(state, words, now)
   const gold = state.guild.gold
   const learned = useMemo(() => learnedWords(state).length, [state])
+  const formCount = useMemo(() => formPrompts(state).length, [state])
+  const [useForms, setUseForms] = useState(false)
+  const formsOn = useForms && formCount > 0
 
   const [scripts, setScripts] = useState<Script[]>(['hiragana'])
   const [useWords, setUseWords] = useState(true)
@@ -214,11 +217,26 @@ export function Play({ state, update, onStartRun, onStartReview }: Props) {
           >
             My words ({learned})
           </button>
+          <button
+            type="button"
+            className={`chip ${formsOn ? 'on' : ''}`}
+            aria-pressed={formsOn}
+            disabled={formCount === 0}
+            onClick={() => setUseForms((v) => !v)}
+            title={formCount === 0 ? 'Review a few verbs or adjectives first' : 'Yokai like 書く・て: type かいて'}
+          >
+            Verb forms
+          </button>
         </div>
+        {formsOn && (
+          <p className="muted small">
+            Form yokai show a word and a form, like <span lang="ja">書く・て</span>: type <span lang="ja">かいて</span>.
+          </p>
+        )}
         <button
           type="button"
           className="primary wide"
-          onClick={() => onStartRun({ scripts, words: wordsOn })}
+          onClick={() => onStartRun({ scripts, words: wordsOn, forms: formsOn })}
         >
           Start the watch
         </button>
