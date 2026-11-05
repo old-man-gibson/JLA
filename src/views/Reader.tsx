@@ -1,17 +1,8 @@
-import { Fragment, useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { AudioButton } from '../components/AudioButton'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { ReadingLines } from '../components/ReadingLines'
 import { getCapability, type ImageLimits, type Sample, type SampleError } from '../lib/cloud'
-import {
-  buildReaderPrompt,
-  lineText,
-  splitFurigana,
-  validateReading,
-  wordFromLine,
-  type Reading,
-  type ReaderLine,
-} from '../lib/reader'
+import { buildReaderPrompt, validateReading, type Reading } from '../lib/reader'
 import type { AppState } from '../lib/types'
-import { addCustomWord, customWordId } from '../lib/words'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
@@ -69,9 +60,7 @@ export function Reader({ state, update }: { state: AppState; update: Update }) {
   const [reading, setReading] = useState<Reading | null>(() => readLocal<Reading>(LAST_KEY))
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
-  const [furigana, setFurigana] = useState(true)
-  const [shown, setShown] = useState<Set<number>>(new Set())
-  const [selected, setSelected] = useState<{ line: number; word: number } | null>(null)
+  const [readingId, setReadingId] = useState(0)
   const controller = useRef<AbortController | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -99,8 +88,6 @@ export function Reader({ state, update }: { state: AppState; update: Update }) {
     const ctl = new AbortController()
     controller.current = ctl
     setStatus({ kind: 'working' })
-    setSelected(null)
-    setShown(new Set())
     try {
       const raw = await sample.json(buildReaderPrompt(input.text), {
         signal: ctl.signal,
@@ -108,6 +95,7 @@ export function Reader({ state, update }: { state: AppState; update: Update }) {
       })
       const result = validateReading(raw)
       setReading(result)
+      setReadingId((n) => n + 1)
       writeLocal(LAST_KEY, result)
       setStatus(
         result.lines.length === 0
@@ -140,20 +128,6 @@ export function Reader({ state, update }: { state: AppState; update: Update }) {
     setSource(value)
     writeLocal(SOURCE_KEY, value)
   }
-
-  const addWord = (line: ReaderLine, wordIndex: number) => {
-    if (!reading) return
-    const word = wordFromLine(reading, line, wordIndex, source.trim())
-    if (word) update((s) => addCustomWord(s, word, new Date()))
-  }
-
-  const toggleShown = (i: number) =>
-    setShown((prev) => {
-      const next = new Set(prev)
-      if (next.has(i)) next.delete(i)
-      else next.add(i)
-      return next
-    })
 
   const working = status.kind === 'working'
 
@@ -244,103 +218,9 @@ export function Reader({ state, update }: { state: AppState; update: Update }) {
 
       {reading && reading.lines.length > 0 && !working && (
         <section className="reading">
-          <div className="reading-head">
-            <h2 className="section-title">
-              {reading.lines.length} {reading.lines.length === 1 ? 'line' : 'lines'}
-            </h2>
-            <label className="toggle small">
-              <input type="checkbox" checked={furigana} onChange={(e) => setFurigana(e.target.checked)} />
-              Furigana
-            </label>
-          </div>
-          {photoUrl && <img className="reading-photo" src={photoUrl} alt="The page you photographed" />}
-          <p className="hint">Try reading each line before you open its translation.</p>
-          <ol className="lines">
-            {reading.lines.map((line, i) => {
-              const pick = selected?.line === i ? selected.word : undefined
-              const info = pick !== undefined ? reading.words[pick] : undefined
-              const token = pick !== undefined ? line.tokens.find((t) => t.w === pick) : undefined
-              const added = token ? Boolean(state.customWords[customWordId(token.t)]) : false
-              return (
-                <li key={i} className={`line ${line.kind}`}>
-                  <div className="line-meta">
-                    <span>{line.kind === 'sfx' ? 'Sound effect' : line.kind === 'narration' ? 'Narration' : line.speaker || 'Dialogue'}</span>
-                    <AudioButton texts={[lineText(line)]} label="Play line" />
-                  </div>
-                  <p className="line-ja" lang="ja">
-                    {line.tokens.map((tok, j) => {
-                      const parts = splitFurigana(tok.t, tok.r).map((p, k) =>
-                        p.ruby && furigana ? (
-                          <ruby key={k}>
-                            {p.text}
-                            <rt>{p.ruby}</rt>
-                          </ruby>
-                        ) : (
-                          <Fragment key={k}>{p.text}</Fragment>
-                        ),
-                      )
-                      if (tok.w === undefined) return <span key={j}>{parts}</span>
-                      const isAdded = Boolean(state.customWords[customWordId(tok.t)])
-                      return (
-                        <button
-                          key={j}
-                          type="button"
-                          className={`tok ${pick === tok.w ? 'on' : ''} ${isAdded ? 'added' : ''}`}
-                          onClick={() => setSelected(pick === tok.w ? null : { line: i, word: tok.w! })}
-                        >
-                          {parts}
-                        </button>
-                      )
-                    })}
-                  </p>
-                  {info && token && (
-                    <div className="word-pop">
-                      <div className="word-pop-head">
-                        <span className="word-pop-word" lang="ja">
-                          {token.t}
-                        </span>
-                        <span lang="ja" className="muted">
-                          {token.r ?? info.reading}
-                        </span>
-                        {info.pos && <span className="pill">{info.pos}</span>}
-                      </div>
-                      <p className="word-pop-meaning">{info.meaning}</p>
-                      {info.lemma && info.lemma !== token.t && (
-                        <p className="word-extras">
-                          Dictionary form: <span lang="ja">{info.lemma}</span>
-                          {info.lemmaReading && <span lang="ja"> ({info.lemmaReading})</span>}
-                        </p>
-                      )}
-                      {added ? (
-                        <p className="added-note">In your reviews ✓</p>
-                      ) : (
-                        <button type="button" className="primary" onClick={() => addWord(line, pick!)}>
-                          Add to reviews
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {line.grammar.length > 0 && (
-                    <ul className="grammar">
-                      {line.grammar.map((g, k) => (
-                        <li key={k}>{g}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {line.translation &&
-                    (shown.has(i) ? (
-                      <p className="translation" onClick={() => toggleShown(i)}>
-                        {line.translation}
-                      </p>
-                    ) : (
-                      <button type="button" className="link-button" onClick={() => toggleShown(i)}>
-                        Show translation
-                      </button>
-                    ))}
-                </li>
-              )
-            })}
-          </ol>
+          <ReadingLines key={readingId} reading={reading} state={state} update={update} source={source}>
+            {photoUrl && <img className="reading-photo" src={photoUrl} alt="The page you photographed" />}
+          </ReadingLines>
           <button
             type="button"
             className="secondary"

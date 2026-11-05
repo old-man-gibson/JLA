@@ -133,7 +133,7 @@ export interface ImageLimits {
 export interface Sample {
   json<T = unknown>(
     input: string,
-    options?: { images?: Blob[]; signal?: AbortSignal; modelTier?: 'quick' | 'default' | 'complex' },
+    options?: { images?: Blob[]; signal?: AbortSignal; modelTier?: 'quick' | 'default' | 'complex'; cache?: boolean },
   ): Promise<T>
   limits(): Promise<{ images?: ImageLimits }>
 }

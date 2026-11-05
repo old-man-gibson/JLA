@@ -163,15 +163,8 @@ export function wordFromLine(
   }
 }
 
-export function buildReaderPrompt(pastedText?: string): string {
-  const what = pastedText
-    ? `Here is Japanese text the learner copied from a manga:\n\n<text>\n${pastedText.slice(0, 4000)}\n</text>`
-    : 'The image is a photo or scan of a manga page or panel the learner is reading.'
-  return `You are helping a beginner learner of Japanese (around JLPT N5) read manga. ${what}
-
-Transcribe every line of Japanese dialogue and narration in reading order (panels right to left, top to bottom; speech bubbles right to left). Include sound effects only when they are written in kana and clearly part of the scene. Then explain it for a beginner.
-
-Reply with only JSON in this shape:
+/** The reply format shared by the manga reader and Claude-written stories. */
+const READING_FORMAT = `Reply with only JSON in this shape:
 {"lines":[{"kind":"dialogue","speaker":"short description of who speaks, or omit","tokens":[{"t":"俺","r":"おれ","w":0},{"t":"は"},{"t":"腹","r":"はら","w":1},{"t":"が"},{"t":"減った","r":"へった","w":2},{"t":"！"}],"translation":"natural English","grammar":["one short beginner-friendly note on a grammar point in this line"]}],
 "words":[{"surface":"減った","reading":"へった","lemma":"減る","lemmaReading":"へる","meaning":"to decrease (腹が減る = to be hungry)","pos":"verb"}]}
 
@@ -182,6 +175,38 @@ Rules:
 - Give "r" (reading in hiragana, as read in this context) only for tokens that contain kanji.
 - Give "w" (an index into "words") for every content word: nouns, verbs, adjectives, adverbs, set expressions. Not for particles or punctuation. Reuse the same index when a word repeats.
 - "meaning" is a short English gloss for this context. Note casual, rough or dialect forms (e.g. "casual for 私").
-- At most 2 grammar notes per line, only where useful. Use [] when there's nothing worth noting.
+- At most 2 grammar notes per line, only where useful. Use [] when there's nothing worth noting.`
+
+export function buildReaderPrompt(pastedText?: string): string {
+  const what = pastedText
+    ? `Here is Japanese text the learner copied from a manga:\n\n<text>\n${pastedText.slice(0, 4000)}\n</text>`
+    : 'The image is a photo or scan of a manga page or panel the learner is reading.'
+  return `You are helping a beginner learner of Japanese (around JLPT N5) read manga. ${what}
+
+Transcribe every line of Japanese dialogue and narration in reading order (panels right to left, top to bottom; speech bubbles right to left). Include sound effects only when they are written in kana and clearly part of the scene. Then explain it for a beginner.
+
+${READING_FORMAT}
 - If there is no Japanese text, reply {"lines":[],"words":[]}.`
+}
+
+export interface StoryWord {
+  word: string
+  reading: string
+  meaning: string
+}
+
+/** Asks Claude for a short graded story built from the words and grammar the learner is studying. */
+export function buildStoryPrompt(options: { theme: string; words: StoryWord[]; grammar: string[] }): string {
+  const words = options.words
+    .slice(0, 120)
+    .map((w) => `${w.word} (${w.reading}): ${w.meaning}`)
+    .join('\n')
+  const grammar = options.grammar.length > 0 ? ` The learner is practising: ${options.grammar.join('; ')}.` : ''
+  return `You are writing a short graded story for a beginner learner of Japanese (around JLPT N5). Theme: ${options.theme}.
+
+Write 8 to 12 short lines. Narration uses polite です/ます style; dialogue can be casual, as in manga. Use only beginner grammar.${grammar}
+${words ? `Use as many of these words the learner is studying as fit naturally (word, reading, meaning):\n${words}\nOther words should be very common ones.` : 'Use only very common words.'}
+Give the story a small twist or a funny ending. Make the first line the story's title, with kind "narration".
+
+${READING_FORMAT}`
 }
