@@ -252,6 +252,8 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
         </section>
       )}
 
+      <ReminderSetting />
+
       <section className="setting">
         <label className="toggle">
           <input type="checkbox" checked={settings.autoplayAudio} onChange={(e) => set({ autoplayAudio: e.target.checked })} />
@@ -382,5 +384,49 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
         <a href="https://wanakana.com">WanaKana</a>.
       </footer>
     </div>
+  )
+}
+
+/** Daily study reminder; only in Android app versions that support notifications. */
+function ReminderSetting() {
+  const shell = androidShell()
+  const [time, setTime] = useState(() => shell?.reminderTime?.() ?? '')
+  const [draft, setDraft] = useState(time || '19:00')
+  if (!shell?.setReminder || !shell.cancelReminder) return null
+  const save = () => {
+    const [hour, minute] = draft.split(':').map(Number)
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return
+    shell.setReminder!(hour, minute)
+    setTime(draft)
+  }
+  return (
+    <section className="setting">
+      <label htmlFor="reminder-time" className="setting-label">
+        Daily reminder
+      </label>
+      <p className="setting-help">
+        {time
+          ? `A notification reminds you every day at about ${time}. A little every day beats a lot once a week.`
+          : 'Get a notification every day at a time that suits you. A little every day beats a lot once a week.'}
+      </p>
+      <div className="button-row">
+        <input id="reminder-time" type="time" className="select" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <button type="button" className="primary" onClick={save}>
+          {time ? 'Change' : 'Turn on'}
+        </button>
+        {time && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              shell.cancelReminder!()
+              setTime('')
+            }}
+          >
+            Turn off
+          </button>
+        )}
+      </div>
+    </section>
   )
 }

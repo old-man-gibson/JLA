@@ -2,7 +2,9 @@ package io.github.oldmangibson.jla;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.webkit.JavascriptInterface;
@@ -212,6 +214,28 @@ public class MainActivity extends Activity {
             if (ttsReady) {
                 tts.stop();
             }
+        }
+
+        /** The daily reminder time as "HH:MM", or "" when it's off. */
+        @JavascriptInterface
+        public String reminderTime() {
+            return Reminders.get(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void setReminder(int hour, int minute) {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= 33
+                        && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[] {"android.permission.POST_NOTIFICATIONS"}, 3);
+                }
+                Reminders.set(MainActivity.this, hour, minute);
+            });
+        }
+
+        @JavascriptInterface
+        public void cancelReminder() {
+            Reminders.cancel(MainActivity.this);
         }
 
         @JavascriptInterface

@@ -10,6 +10,10 @@ export interface AndroidShell {
   speak(text: string): void
   stop(): void
   saveFile(filename: string, content: string): void
+  /** Daily reminder, from app version 2. "HH:MM", or "" when off. */
+  reminderTime?(): string
+  setReminder?(hour: number, minute: number): void
+  cancelReminder?(): void
 }
 
 export function androidShell(): AndroidShell | undefined {
