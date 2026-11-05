@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectLayout, KEYPAD_LAYOUTS } from './keypadLayouts'
+import { detectLayout, KEYPAD_LAYOUTS, swapYZ } from './keypadLayouts'
 
 describe('on-screen key layouts', () => {
   it.each(Object.values(KEYPAD_LAYOUTS).map((l) => [l.id, l] as const))('%s rows fill the grid exactly', (_, layout) => {
@@ -28,5 +28,19 @@ describe('on-screen key layouts', () => {
     expect(detectLayout(['fr-CA'])).toBe('qwerty')
     expect(detectLayout(['en-US'])).toBe('qwerty')
     expect(detectLayout([])).toBe('qwerty')
+  })
+
+  it('uses the time zone when the phone language is only English', () => {
+    expect(detectLayout(['en-US'], 'Europe/Zurich')).toBe('qwertz')
+    expect(detectLayout(['en-GB', 'en'], 'Europe/Berlin')).toBe('qwertz')
+    expect(detectLayout(['en-US'], 'Europe/Paris')).toBe('azerty')
+    expect(detectLayout(['en-US'], 'America/New_York')).toBe('qwerty')
+    // A language that says something wins over the time zone.
+    expect(detectLayout(['it-IT'], 'Europe/Zurich')).toBe('qwerty')
+  })
+
+  it('swaps y and z', () => {
+    expect(swapYZ('nzo')).toBe('nyo')
+    expect(swapYZ('zu')).toBe('yu')
   })
 })

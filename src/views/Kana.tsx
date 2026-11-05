@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Keypad } from '../components/Keypad'
-import { resolveLayout } from '../lib/keypadLayouts'
+import { KEYPAD_LAYOUTS, resolveLayout, swapYZ, type KeypadLayoutId } from '../lib/keypadLayouts'
 import { GROUP_LABELS, kanaFor, SCRIPT_LABELS, type KanaGroup, type KanaItem, type Script } from '../data/kana'
 import { isKanaAnswerCorrect, normalizeRomaji } from '../lib/answer'
 import { FLUENT_MS, FLUENT_STREAK, kanaLevel, pickKanaSession, recordKanaAnswer } from '../lib/kanaDrill'
@@ -154,6 +154,9 @@ function KanaDrill({
   const item = queue[index]
   const finished = index >= queue.length
   const onscreen = useOnscreenKeys(settings)
+  const layout = resolveLayout(settings.keypadLayout)
+  // Set when an answer was only wrong because y and z sit elsewhere on the learner's keyboard.
+  const [layoutSlip, setLayoutSlip] = useState<KeypadLayoutId | null>(null)
 
   useEffect(() => {
     shownAt.current = performance.now()
@@ -176,6 +179,13 @@ function KanaDrill({
     if (!normalizeRomaji(el.value)) return
     const ms = performance.now() - shownAt.current
     const correct = isKanaAnswerCorrect(item, el.value)
+    // On-screen keys in the "wrong" one of QWERTY/QWERTZ: don't count the slip, offer to switch.
+    if (!correct && onscreen && layout.id !== 'azerty' && isKanaAnswerCorrect(item, swapYZ(el.value))) {
+      setLayoutSlip(layout.id === 'qwerty' ? 'qwertz' : 'qwerty')
+      el.value = ''
+      return
+    }
+    setLayoutSlip(null)
     const answer = { item, correct, ms }
     update((s) => ({ ...s, kana: { ...s.kana, [item.kana]: recordKanaAnswer(s.kana[item.kana], correct, ms, new Date()) } }))
     setAnswers((a) => [...a, answer])
@@ -218,7 +228,36 @@ function KanaDrill({
         {item.kana}
       </div>
       <div className="drill-feedback" aria-live="polite">
-        {missed ? (
+        {layoutSlip ? (
+          <div className="layout-slip">
+            <p>
+              That would be right on a <strong>{KEYPAD_LAYOUTS[layoutSlip].name}</strong> keyboard, where y and z swap
+              places. Not counted.
+            </p>
+            <div className="button-row">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  update((s) => ({ ...s, settings: { ...s.settings, keypadLayout: layoutSlip } }))
+                  setLayoutSlip(null)
+                }}
+              >
+                Use {KEYPAD_LAYOUTS[layoutSlip].name} keys
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  update((s) => ({ ...s, settings: { ...s.settings, keypadLayout: layout.id } }))
+                  setLayoutSlip(null)
+                }}
+              >
+                Keep {layout.name}
+              </button>
+            </div>
+          </div>
+        ) : missed ? (
           <p className="verdict wrong">
             <span lang="ja">{missed.kana}</span> is <strong>{missed.romaji[0]}</strong>
             {missed.romaji.length > 1 && <span className="muted"> (also {missed.romaji.slice(1).join(', ')})</span>}.
@@ -252,7 +291,7 @@ function KanaDrill({
           readOnly={onscreen}
         />
       </form>
-      {onscreen && <Keypad layout={resolveLayout(settings.keypadLayout)} onKey={pressKey} />}
+      {onscreen && <Keypad layout={layout} onKey={pressKey} />}
     </div>
   )
 }
