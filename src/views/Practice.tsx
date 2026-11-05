@@ -13,6 +13,7 @@ import type { AppState, Settings } from '../lib/types'
 import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
 import { countToday } from '../lib/quests'
 import { findWord, studyWords } from '../lib/words'
+import { KanjiPractice } from './KanjiPractice'
 import { Listening } from './Listening'
 
 type Update = (fn: (s: AppState) => AppState) => void
@@ -77,7 +78,7 @@ export function Practice({
   update: Update
   onDrilling: (drilling: boolean) => void
 }) {
-  const [mode, setMode] = useState<'menu' | 'forms' | 'listening'>('menu')
+  const [mode, setMode] = useState<'menu' | 'forms' | 'listening' | 'kanji'>('menu')
   const [forms, setForms] = useState<FormId[]>(['masu', 'te', 'nai', 'adj-nai'])
   const [round, setRound] = useState<{ id: number; items: FormItem[] } | null>(null)
   const { words, startedOnly } = useMemo(() => formWords(state), [state])
@@ -104,6 +105,7 @@ export function Practice({
     )
   }
   if (mode === 'listening') return <Listening state={state} update={update} onExit={() => setMode('menu')} />
+  if (mode === 'kanji') return <KanjiPractice state={state} onExit={() => setMode('menu')} />
 
   const toggle = (id: FormId) => setForms((f) => (f.includes(id) ? (f.length > 1 ? f.filter((x) => x !== id) : f) : [...f, id]))
   const stat = (id: FormId) => {
@@ -151,6 +153,18 @@ export function Practice({
         <p className="muted small">Hear a word or sentence you’ve learned and pick what it means. No reading allowed.</p>
         <button type="button" className="primary wide" onClick={() => setMode('listening')}>
           Start listening
+        </button>
+      </section>
+
+      <section className="practice-card">
+        <h2>
+          <span lang="ja">漢字</span> Kanji
+        </h2>
+        <p className="muted small">
+          Pick what a kanji means, or how a word is read without furigana. Uses the kanji in words you’ve started.
+        </p>
+        <button type="button" className="primary wide" onClick={() => setMode('kanji')}>
+          Start kanji practice
         </button>
       </section>
     </div>

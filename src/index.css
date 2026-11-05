@@ -2531,3 +2531,10 @@ button:disabled {
   word-break: break-all;
   resize: vertical;
 }
+
+.kanji-prompt {
+  margin: 0;
+  text-align: center;
+  font-size: 4rem;
+  line-height: 1.3;
+}

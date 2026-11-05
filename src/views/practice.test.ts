@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BUILTIN_BY_ID, BUILTIN_WORDS } from '../data/decks'
+import { buildKanjiRound } from './KanjiPractice'
 import { buildListening } from './Listening'
 import { isFormAnswerCorrect } from './Practice'
 
@@ -24,6 +25,22 @@ describe('listening rounds', () => {
       expect(new Set(item.options).size).toBe(4)
       expect(item.options).toContain(item.answer)
       expect(item.answer).toBe(item.mode === 'word' ? item.word.meaning : item.word.translation)
+    }
+  })
+})
+
+describe('kanji rounds', () => {
+  it('alternate meaning and reading questions with four distinct options', () => {
+    const words = ['学生', '先生', '日本', '電車', '会社', '食べる'].map((id) => BUILTIN_BY_ID[id])
+    const kanji = ['学', '生', '先', '日', '本', '電', '車', '会', '社', '食']
+    const round = buildKanjiRound(words, kanji)
+    expect(round.length).toBeGreaterThanOrEqual(8)
+    expect(round[0].mode).toBe('meaning')
+    expect(round[1].mode).toBe('reading')
+    for (const item of round) {
+      expect(new Set(item.options).size).toBe(4)
+      expect(item.options).toContain(item.answer)
+      if (item.mode === 'meaning') expect(item.word.word).toContain(item.kanji)
     }
   })
 })
