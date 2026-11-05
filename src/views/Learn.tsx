@@ -2,15 +2,17 @@ import { useState } from 'react'
 import type { AppState } from '../lib/types'
 import { Grammar } from './Grammar'
 import { Kana } from './Kana'
+import { Practice } from './Practice'
 import { Stories } from './Stories'
 
 type Update = (fn: (s: AppState) => AppState) => void
 
-export type LearnSection = 'kana' | 'grammar' | 'stories'
+export type LearnSection = 'kana' | 'grammar' | 'practice' | 'stories'
 
 const SECTIONS: { id: LearnSection; ja: string; label: string }[] = [
   { id: 'kana', ja: 'かな', label: 'Kana' },
   { id: 'grammar', ja: '文法', label: 'Grammar' },
+  { id: 'practice', ja: '練習', label: 'Practice' },
   { id: 'stories', ja: '物語', label: 'Stories' },
 ]
 
@@ -49,6 +51,7 @@ export function Learn({ state, update, section, onSection, onStartReview }: Prop
       )}
       {section === 'kana' && <Kana state={state} update={update} onDrilling={setDrilling} />}
       {section === 'grammar' && <Grammar state={state} update={update} onStartReview={onStartReview} />}
+      {section === 'practice' && <Practice state={state} update={update} onDrilling={setDrilling} />}
       {section === 'stories' && <Stories state={state} update={update} />}
     </div>
   )

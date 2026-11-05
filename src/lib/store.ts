@@ -32,6 +32,7 @@ export function defaultState(): AppState {
     runs: defaultRuns(),
     grammar: {},
     storiesRead: {},
+    formStats: {},
   }
 }
 
@@ -53,6 +54,7 @@ export function normalizeState(raw: unknown): AppState {
     runs: { ...defaultRuns(), ...data.runs },
     grammar: data.grammar ?? {},
     storiesRead: data.storiesRead ?? {},
+    formStats: data.formStats ?? {},
   }
 }
 

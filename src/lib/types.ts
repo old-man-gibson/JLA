@@ -102,4 +102,6 @@ export interface AppState {
   grammar: Record<string, { startedAt: string }>
   /** Built-in stories the learner has finished, with when. */
   storiesRead: Record<string, string>
+  /** Answers per conjugation form in forms practice. */
+  formStats: Record<string, { seen: number; correct: number }>
 }
