@@ -53,6 +53,26 @@ export function Review({ state, update, onExit }: Props) {
     setNow(at)
   }
 
+  // The card as it was before the last grade, so a mistaken tap can be taken back.
+  const [lastGraded, setLastGraded] = useState<StudyCard | null>(null)
+  const gradeAndRemember = (card: StudyCard, rating: Grade) => {
+    setLastGraded(card)
+    apply((s, at) => gradeCard(s, card.id, rating, at))
+  }
+  const undo = () => {
+    const previous = lastGraded
+    if (!previous) return
+    setLastGraded(null)
+    apply((s) => {
+      const last = s.log.at(-1)
+      return {
+        ...s,
+        cards: { ...s.cards, [previous.id]: previous },
+        log: last?.cardId === previous.id ? s.log.slice(0, -1) : s.log,
+      }
+    })
+  }
+
   let body
   if (item.type === 'new') {
     body = (
@@ -65,7 +85,7 @@ export function Review({ state, update, onExit }: Props) {
     )
   } else if (item.type === 'card' && item.card.kind === 'grammar') {
     const card = item.card
-    const onGrade = (rating: Grade) => apply((s, at) => gradeCard(s, card.id, rating, at))
+    const onGrade = (rating: Grade) => gradeAndRemember(card, rating)
     body = (
       <GrammarCard
         key={`${card.id}:${card.fsrs.reps}:${card.fsrs.due}`}
@@ -79,7 +99,7 @@ export function Review({ state, update, onExit }: Props) {
     const card = item.card
     // nextItem only returns cards of words in the study list, so the word exists.
     const word = findWord(state, card.wordId)!
-    const onGrade = (rating: Grade) => apply((s, at) => gradeCard(s, card.id, rating, at))
+    const onGrade = (rating: Grade) => gradeAndRemember(card, rating)
     const key = `${card.id}:${card.fsrs.reps}:${card.fsrs.due}`
     body =
       card.kind === 'recognize' ? (
@@ -94,9 +114,16 @@ export function Review({ state, update, onExit }: Props) {
   return (
     <div className="review">
       <div className="review-bar">
-        <button type="button" className="link-button" onClick={onExit}>
-          ← Done
-        </button>
+        <div className="review-actions">
+          <button type="button" className="link-button" onClick={onExit}>
+            ← Done
+          </button>
+          {lastGraded && (
+            <button type="button" className="link-button undo" onClick={undo} title="Undo the last answer">
+              ↶ Undo
+            </button>
+          )}
+        </div>
         <div className="counts" aria-label="Remaining">
           <span className="count new" title="New words and grammar exercises">
             {counts.newWords + counts.newGrammar} new

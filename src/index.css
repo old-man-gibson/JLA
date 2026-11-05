@@ -2189,3 +2189,13 @@ button:disabled {
 .story-writer p {
   margin: 0;
 }
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link-button.undo {
+  color: var(--muted);
+}
