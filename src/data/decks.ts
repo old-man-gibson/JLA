@@ -1,5 +1,6 @@
 import { ADVENTURER_WORDS } from './adventurer'
 import { STARTER_WORDS, type Word } from './deck'
+import { EVERYDAY_WORDS } from './everyday'
 
 export type DeckId = 'starter' | 'adventurer'
 
@@ -16,8 +17,9 @@ export const DECKS: DeckInfo[] = [
     id: 'starter',
     name: 'Starter',
     ja: '基本',
-    description: 'Very common everyday words: people, time, places, basic verbs and adjectives.',
-    words: STARTER_WORDS,
+    description:
+      'Very common everyday words: people, family, time, places, food, basic verbs and adjectives, and casual expressions from manga.',
+    words: [...STARTER_WORDS, ...EVERYDAY_WORDS],
   },
   {
     id: 'adventurer',

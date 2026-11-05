@@ -15,7 +15,9 @@ A small Japanese study app built around how memory works: kana drilled until rea
 - **Backups.** Export and import a JSON file of your progress.
 - **On-screen romaji keys** on touch screens, laid out in the page so the phone's keyboard never covers the card or the game. Settings can switch back to the device keyboard (for example a Japanese flick keyboard).
 - **Manga reader.** Photograph a manga page (or paste text). Claude transcribes it line by line with furigana, word meanings and short grammar notes. Translations stay hidden until you ask, so you try reading first. Tap a word to add it to your reviews; its example sentence becomes the actual line from your manga. (Needs the claude.ai version, where it runs on your own Claude account.)
-- **Decks.** *Starter* (62 everyday words) and *Adventurer* (45 fantasy and isekai words: 勇者, 魔法, 冒険者, 経験値…). New words alternate between enabled decks, and words you add from manga come first. Every built-in sentence is checked by a test against its word's reading.
+- **Grammar.** 18 beginner grammar points in a learning order (こそあど, は, です, の, か/ね/よ, も, が, を, ます, に, で, と, い/な-adjectives, たい, てください, ている, ましょう), each with a short explanation, examples with audio and 4–5 fill-the-gap exercises. Starting a point adds its exercises to the review queue, scheduled like words.
+- **Stories.** Six short graded stories (daily life and fantasy) with furigana, audio and hidden translations. In the claude.ai version, Claude writes new stories from the words you've started and the grammar you're practising, with tappable words you can add to your reviews.
+- **Decks.** *Starter* (138 everyday words) and *Adventurer* (45 fantasy and isekai words: 勇者, 魔法, 冒険者, 経験値…). New words alternate between enabled decks, and words you add from manga come first. Every built-in sentence is checked by a test against its word's reading.
 - **Guild (idle).** Every card you've learned is an adventurer earning gold. Income grows with how well you know the card (FSRS stability), and overdue cards rest and earn nothing until reviewed, so the idle loop rewards reviewing on time rather than grinding. Gold piles up for at most 24 hours. Guild rank goes from F to S with mature cards. Gold buys buildings and permanent Night Watch upgrades.
 - **Night Watch (survivors-like).** Yokai carrying kana and words you've already met drift toward your lantern; type their readings to banish them. Waves speed up, level-ups offer a draft of upgrades, and every fifth wave brings a boss carrying three words. The end screen lists what got through. It never changes your review schedule.
 
@@ -65,7 +67,8 @@ Notes:
 | Path | What's there |
 | --- | --- |
 | `src/data/kana.ts` | Kana table with accepted romaji spellings (shi/si, tsu/tu, …) |
-| `src/data/deck.ts`, `src/data/adventurer.ts` | Starter and Adventurer decks. Sentence markup: `{漢字\|かんじ}` adds furigana, `[[…]]` marks the target word |
+| `src/data/grammar.ts`, `src/data/stories.ts` | Grammar lessons and exercises, graded stories |
+| `src/data/deck.ts`, `src/data/everyday.ts`, `src/data/adventurer.ts` | Starter (two parts) and Adventurer decks. Sentence markup: `{漢字\|かんじ}` adds furigana, `[[…]]` marks the target word |
 | `src/data/decks.ts`, `src/lib/words.ts` | Deck registry, introduction order, manga words |
 | `src/lib/reader.ts` | Manga reader prompt, reply validation, furigana splitting, turning a line into a card |
 | `src/lib/guild.ts` | Idle income, ranks, buildings and perks |
@@ -79,7 +82,7 @@ Notes:
 | `src/lib/platform.ts`, `public/sw.js` | Android shell bridge, offline support for the Pages site |
 | `android/` | Android shell (Java, no third-party dependencies) |
 | `.github/workflows/` | Deploy to Pages on every push; build and release the APK |
-| `src/views/` | Today, Review, Read, Kana, Play (guild), Night Watch, Words, Settings screens |
+| `src/views/` | Today, Review, Learn (Kana, Grammar, Stories), Read, Play (guild), Night Watch, Words, Settings screens |
 
 ## Roadmap
 
@@ -87,4 +90,4 @@ Notes:
 2. **Bigger deck.** Build a frequency-ordered deck with example sentences from [Tatoeba](https://tatoeba.org) (CC BY). JMdict and KANJIDIC are CC BY-SA and need attribution.
 3. **Kanji.** Component breakdowns ([KanjiVG](https://kanjivg.tagaini.net) for stroke order), always tied to vocabulary you're learning.
 4. **Pitch accent and better audio.** Pitch data from Kanjium, recorded or [VOICEVOX](https://voicevox.hiroshiba.jp) audio, and a shadowing mode.
-5. **Particle drills** (は/が, に/で) as their own card type.
+5. **More grammar** at JLPT N4 level, and listening-only cards.
