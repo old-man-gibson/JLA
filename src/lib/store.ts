@@ -33,6 +33,8 @@ export function defaultState(): AppState {
     grammar: {},
     storiesRead: {},
     formStats: {},
+    daily: { date: '', counts: {} },
+    questBoard: { date: '', ids: [], claimed: [] },
   }
 }
 
@@ -55,6 +57,8 @@ export function normalizeState(raw: unknown): AppState {
     grammar: data.grammar ?? {},
     storiesRead: data.storiesRead ?? {},
     formStats: data.formStats ?? {},
+    daily: data.daily ?? { date: '', counts: {} },
+    questBoard: data.questBoard ?? { date: '', ids: [], claimed: [] },
   }
 }
 

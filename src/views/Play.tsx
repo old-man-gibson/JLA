@@ -12,6 +12,7 @@ import {
   PERKS,
   perkCost,
 } from '../lib/guild'
+import { claimQuest, questStatuses } from '../lib/quests'
 import { learnedWords, type RunOptions } from '../lib/run'
 import type { AppState } from '../lib/types'
 import { studyWords } from '../lib/words'
@@ -115,6 +116,42 @@ export function Play({ state, update, onStartRun, onStartReview }: Props) {
             </p>
           )
         )}
+
+        <h3 className="section-title">
+          <span lang="ja">依頼</span> Today’s quests
+        </h3>
+        <ul className="quests">
+          {questStatuses(state, now).map(({ quest, done, goal, complete, claimed }) => (
+            <li key={quest.id} className={`quest ${claimed ? 'claimed' : complete ? 'ready' : ''}`}>
+              <span className="quest-ja" lang="ja">
+                {quest.ja}
+              </span>
+              <span className="quest-main">
+                <span className="quest-title">{quest.title}</span>
+                <span className="bar" aria-hidden="true">
+                  <span className="bar-fill" style={{ width: `${(done / goal) * 100}%` }} />
+                </span>
+                <span className="muted small">
+                  {done}/{goal} · {quest.reward} gold
+                </span>
+              </span>
+              {claimed ? (
+                <span className="pill known">Claimed</span>
+              ) : (
+                complete && (
+                  <button
+                    type="button"
+                    className="primary buy"
+                    onClick={() => update((s) => claimQuest(s, quest.id, new Date()))}
+                  >
+                    Claim {quest.reward} g
+                  </button>
+                )
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="muted small">New quests every day. Each one is real practice, so the gold is earned by learning.</p>
 
         <h3 className="section-title">Buildings</h3>
         <ul className="shop">

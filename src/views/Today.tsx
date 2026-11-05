@@ -4,6 +4,7 @@ import { kanaLevel } from '../lib/kanaDrill'
 import { GRAMMAR } from '../data/grammar'
 import { STORIES } from '../data/stories'
 import { collectGold, formatGold, guildReport } from '../lib/guild'
+import { questStatuses } from '../lib/quests'
 import { computeStats, dayStart, formatInterval, nextItem, queueCounts } from '../lib/srs'
 import type { AppState } from '../lib/types'
 import { studyWords } from '../lib/words'
@@ -158,6 +159,17 @@ export function Today({ state, update, onStartReview, onOpen }: Props) {
               · {formatGold(guild.pending)} waiting · {guild.perHour.toFixed(1)}/hour
             </span>
           )}
+          {(() => {
+            const ready = questStatuses(state, now).filter((q) => q.complete && !q.claimed).length
+            return ready > 0 ? (
+              <>
+                <br />
+                <span className="small">
+                  {ready} {ready === 1 ? 'quest is' : 'quests are'} ready to claim in Play.
+                </span>
+              </>
+            ) : null
+          })()}
           {guild.resting > 0 && (
             <>
               <br />

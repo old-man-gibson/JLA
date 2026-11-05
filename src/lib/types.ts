@@ -104,4 +104,8 @@ export interface AppState {
   storiesRead: Record<string, string>
   /** Answers per conjugation form in forms practice. */
   formStats: Record<string, { seen: number; correct: number }>
+  /** Today's activity counts for guild quests (reset each study day). */
+  daily: { date: string; counts: Record<string, number> }
+  /** Today's quests and which have been claimed. */
+  questBoard: { date: string; ids: string[]; claimed: string[] }
 }

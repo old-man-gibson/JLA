@@ -11,6 +11,7 @@ import { resolveLayout } from '../lib/keypadLayouts'
 import { speak } from '../lib/speech'
 import type { AppState, Settings } from '../lib/types'
 import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
+import { countToday } from '../lib/quests'
 import { findWord, studyWords } from '../lib/words'
 import { Listening } from './Listening'
 
@@ -102,7 +103,7 @@ export function Practice({
       />
     )
   }
-  if (mode === 'listening') return <Listening state={state} onExit={() => setMode('menu')} />
+  if (mode === 'listening') return <Listening state={state} update={update} onExit={() => setMode('menu')} />
 
   const toggle = (id: FormId) => setForms((f) => (f.includes(id) ? (f.length > 1 ? f.filter((x) => x !== id) : f) : [...f, id]))
   const stat = (id: FormId) => {
@@ -203,7 +204,8 @@ function FormsDrill({
     setScore((s) => ({ right: s.right + (correct ? 1 : 0), total: s.total + 1 }))
     update((s) => {
       const prev = s.formStats[item.form] ?? { seen: 0, correct: 0 }
-      return { ...s, formStats: { ...s.formStats, [item.form]: { seen: prev.seen + 1, correct: prev.correct + (correct ? 1 : 0) } } }
+      const next = { ...s, formStats: { ...s.formStats, [item.form]: { seen: prev.seen + 1, correct: prev.correct + (correct ? 1 : 0) } } }
+      return correct ? countToday(next, 'formsCorrect', 1, new Date()) : next
     })
     if (settings.autoplayAudio) speak(item.answer.reading)
     if (!correct) {

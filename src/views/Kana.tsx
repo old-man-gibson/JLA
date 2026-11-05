@@ -4,6 +4,7 @@ import { KEYPAD_LAYOUTS, resolveLayout, swapYZ, type KeypadLayoutId } from '../l
 import { GROUP_LABELS, kanaFor, SCRIPT_LABELS, type KanaGroup, type KanaItem, type Script } from '../data/kana'
 import { isKanaAnswerCorrect, normalizeRomaji } from '../lib/answer'
 import { FLUENT_MS, FLUENT_STREAK, kanaLevel, pickKanaSession, recordKanaAnswer } from '../lib/kanaDrill'
+import { countToday } from '../lib/quests'
 import type { AppState, KanaStat, Settings } from '../lib/types'
 import { applyKey, useOnscreenKeys, useTypingKeys, type TypedKey } from '../lib/typing'
 
@@ -196,7 +197,14 @@ function KanaDrill({
     }
     setLayoutSlip(null)
     const answer = { item, correct, ms }
-    update((s) => ({ ...s, kana: { ...s.kana, [item.kana]: recordKanaAnswer(s.kana[item.kana], correct, ms, new Date()) } }))
+    update((s) =>
+      countToday(
+        { ...s, kana: { ...s.kana, [item.kana]: recordKanaAnswer(s.kana[item.kana], correct, ms, new Date()) } },
+        'kanaAnswers',
+        1,
+        new Date(),
+      ),
+    )
     setAnswers((a) => [...a, answer])
     setLast(answer)
     if (correct) {

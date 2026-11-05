@@ -5,6 +5,7 @@ import { useKeys } from '../hooks/useKeys'
 import { plainText } from '../lib/furigana'
 import { speak, speechSupported, stopSpeaking } from '../lib/speech'
 import type { AppState } from '../lib/types'
+import { countToday } from '../lib/quests'
 import { findWord, studyWords } from '../lib/words'
 
 const ROUND = 10
@@ -49,7 +50,15 @@ export function buildListening(learned: Word[], distractors: Word[]): ListenItem
     })
 }
 
-export function Listening({ state, onExit }: { state: AppState; onExit: () => void }) {
+export function Listening({
+  state,
+  update,
+  onExit,
+}: {
+  state: AppState
+  update: (fn: (s: AppState) => AppState) => void
+  onExit: () => void
+}) {
   const learned = useMemo(() => heardWords(state), [state])
   const [round, setRound] = useState(() => buildListening(learned, studyWords(state)))
   const [index, setIndex] = useState(0)
@@ -72,7 +81,10 @@ export function Listening({ state, onExit }: { state: AppState; onExit: () => vo
   const choose = (option: string) => {
     if (choice) return
     setChoice(option)
-    if (option === item.answer) setRight((r) => r + 1)
+    if (option === item.answer) {
+      setRight((r) => r + 1)
+      update((s) => countToday(s, 'listeningCorrect', 1, new Date()))
+    }
   }
   const next = () => {
     setChoice(null)
