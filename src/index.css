@@ -2302,3 +2302,13 @@ button:disabled {
 .listen-card .big-word {
   margin: 0;
 }
+
+.grammar-level {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grammar-level .section-title {
+  margin: 8px 0 0;
+}

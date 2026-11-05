@@ -18,8 +18,12 @@ export interface GrammarExercise {
   why: string
 }
 
+export type GrammarLevel = 'N5' | 'N4'
+
 export interface GrammarPoint {
   id: string
+  /** JLPT level: N5 is the first level, N4 the next. */
+  level: GrammarLevel
   title: string
   /** The pattern in Japanese, shown big. */
   ja: string
@@ -39,9 +43,11 @@ function point(
   explanation: string[],
   examples: [string, string][],
   exercises: Ex[],
+  level: GrammarLevel = 'N5',
 ): GrammarPoint {
   return {
     id,
+    level,
     title,
     ja,
     summary,
@@ -433,6 +439,260 @@ export const GRAMMAR: GrammarPoint[] = [
       ['ちょっと[[{休|やす}みましょう]]。', ['{休|やす}みましょう', '{休|やす}みました', '{休|やす}みません'], 'Let’s take a short break.', '休みます → 休みましょう.'],
       ['{駅|えき}で[[{会|あ}いましょう]]。', ['{会|あ}いましょう', '{会|あ}いました', '{会|あ}いません'], 'Let’s meet at the station.', '会います → 会いましょう.'],
     ],
+  ),
+  point(
+    'kara',
+    'Because: から・ので',
+    '〜から・〜ので',
+    'Give a reason: 雨だから (because it’s raining). ので is softer and more polite.',
+    [
+      'Put から after the reason, then the result: 雨だから、行かない (It’s raining, so I won’t go). It works after plain or polite forms.',
+      'ので means the same but sounds softer and more objective, so it’s common in polite explanations. After nouns and な-adjectives it becomes なので: 雨なので.',
+    ],
+    [
+      ['{時間|じかん}がないから、タクシーで{行|い}きます。', 'I don’t have time, so I’ll take a taxi.'],
+      ['{頭|あたま}が{痛|いた}いので、{今日|きょう}は{休|やす}みます。', 'I have a headache, so I’ll take today off.'],
+    ],
+    [
+      ['{暑|あつ}い[[から]]、{窓|まど}を{開|あ}けてください。', ['から', 'けど', 'まで'], 'It’s hot, so please open the window.', 'から gives the reason: it’s hot, so…'],
+      ['{明日|あした}は{試験|しけん}がある[[から]]、{今夜|こんや}は{勉強|べんきょう}する。', ['から', 'けど', 'まで'], 'I have an exam tomorrow, so I’ll study tonight.', 'The reason comes first, marked by から.'],
+      ['{雨|あめ}[[なので]]、{試合|しあい}は{中止|ちゅうし}です。', ['なので', 'ので', 'だので'], 'Because of the rain, the match is cancelled.', 'After a noun, ので becomes なので.'],
+      ['{疲|つか}れた[[ので]]、{早|はや}く{寝|ね}ます。', ['ので', 'なので', 'のに'], 'I’m tired, so I’ll go to bed early.', 'After a verb, ので attaches directly: 疲れたので.'],
+      ['「どうして{来|こ}なかったの？」「{病気|びょうき}だった[[から]]。」', ['から', 'まで', 'より'], '“Why didn’t you come?” “Because I was sick.”', 'から can end an answer to どうして (why).'],
+    ],
+    'N4',
+  ),
+  point(
+    'nagara',
+    'While doing: 〜ながら',
+    '〜ながら',
+    'Do two things at once: 音楽を聞きながら (while listening to music).',
+    [
+      'Take the ます form, drop ます and add ながら: 聞きます → 聞きながら. The main action comes last: 音楽を聞きながら勉強する (study while listening to music).',
+      'Both actions are done by the same person.',
+    ],
+    [
+      ['テレビを{見|み}ながらご{飯|はん}を{食|た}べる。', 'I eat while watching TV.'],
+      ['{歩|ある}きながら{話|はな}しましょう。', 'Let’s talk while we walk.'],
+    ],
+    [
+      ['{音楽|おんがく}を[[{聞|き}きながら]]{勉強|べんきょう}します。', ['{聞|き}きながら', '{聞|き}くながら', '{聞|き}いてながら'], 'I study while listening to music.', 'ます-stem + ながら: 聞きます → 聞きながら.'],
+      ['コーヒーを[[{飲|の}みながら]]{新聞|しんぶん}を{読|よ}みます。', ['{飲|の}みながら', '{飲|の}むながら', '{飲|の}んながら'], 'I read the newspaper while drinking coffee.', '飲みます → 飲みながら.'],
+      ['{歌|うた}を[[{歌|うた}いながら]]{料理|りょうり}をする。', ['{歌|うた}いながら', '{歌|うた}うながら', '{歌|うた}ってながら'], 'I cook while singing.', '歌います → 歌いながら.'],
+      ['{笑|わら}い[[ながら]]{話|はな}した。', ['ながら', 'まで', 'から'], 'She talked while laughing.', 'ながら joins two actions happening at the same time.'],
+    ],
+    'N4',
+  ),
+  point(
+    'temoii',
+    'May, it’s okay to: 〜てもいい',
+    '〜てもいいです',
+    'Ask or give permission: 入ってもいいですか (May I come in?).',
+    [
+      'て-form + もいい means "it’s fine to …". As a question it asks permission: 写真を撮ってもいいですか (May I take a photo?).',
+      'Say yes with はい、いいですよ. A polite no is often just すみません、ちょっと…',
+    ],
+    [
+      ['ここに{座|すわ}ってもいいですか。', 'May I sit here?'],
+      ['もう{帰|かえ}ってもいいですよ。', 'You can go home now.'],
+    ],
+    [
+      ['{写真|しゃしん}を{撮|と}って[[もいい]]ですか。', ['もいい', 'はいけない', 'ください'], 'May I take a photo?', 'て-form + もいいですか asks permission.'],
+      ['この{本|ほん}を[[{借|か}りても]]いいですか。', ['{借|か}りても', '{借|か}りて', '{借|か}りるも'], 'May I borrow this book?', 'Permission needs the て-form plus も: 借りても.'],
+      ['「{窓|まど}を{開|あ}けてもいいですか。」「はい、[[いい]]ですよ。」', ['いい', 'だめ', 'いけない'], '“May I open the window?” “Yes, go ahead.”', 'Giving permission: いいですよ.'],
+      ['{鉛筆|えんぴつ}で{書|か}いて[[も]]いいですか。', ['も', 'は', 'が'], 'Is it okay to write in pencil?', 'The も is what makes it "it’s fine even if…".'],
+    ],
+    'N4',
+  ),
+  point(
+    'tewaikenai',
+    'Must not: 〜てはいけない',
+    '〜てはいけません',
+    'Forbid something: ここで写真を撮ってはいけません (No photos here).',
+    [
+      'て-form + はいけない (polite: はいけません) means "must not". It is the opposite of てもいい.',
+      'In casual speech it shortens to ちゃだめ or ちゃいけない: 食べちゃだめ (don’t eat that).',
+    ],
+    [
+      ['{図書館|としょかん}で{話|はな}してはいけません。', 'You must not talk in the library.'],
+      ['{危|あぶ}ないから、{触|さわ}っちゃだめ！', 'It’s dangerous, don’t touch it!'],
+    ],
+    [
+      ['ここでたばこを{吸|す}って[[はいけません]]。', ['はいけません', 'もいいです', 'ください'], 'You must not smoke here.', 'Prohibition: て-form + はいけません.'],
+      ['{授業中|じゅぎょうちゅう}に{寝|ね}て[[は]]いけない。', ['は', 'も', 'が'], 'You must not sleep during class.', 'Prohibition is て + は + いけない.'],
+      ['{夜|よる}{遅|おそ}くまで[[{遊|あそ}んでは]]いけません。', ['{遊|あそ}んでは', '{遊|あそ}びては', '{遊|あそ}ぶは'], 'You must not stay out playing until late at night.', 'The て-form of 遊ぶ is 遊んで, then は.'],
+      ['この{水|みず}を{飲|の}んで[[はいけない]]よ。', ['はいけない', 'もいい', 'ください'], 'You must not drink this water.', 'Prohibition: てはいけない.'],
+    ],
+    'N4',
+  ),
+  point(
+    'nakereba',
+    'Must, have to: 〜なければならない',
+    '〜なければなりません',
+    'Say what you have to do: 行かなければならない (I have to go).',
+    [
+      'Take the ない form, drop い and add ければならない (polite: ければなりません): 行かない → 行かなければならない.',
+      'In speech it gets shortened a lot: 行かなきゃ (I gotta go) and 行かないと.',
+    ],
+    [
+      ['{明日|あした}は{早|はや}く{起|お}きなければなりません。', 'I have to get up early tomorrow.'],
+      ['もう{帰|かえ}らなきゃ。', 'I gotta go home now.'],
+    ],
+    [
+      ['{宿題|しゅくだい}を[[しなければ]]なりません。', ['しなければ', 'しないで', 'すれば'], 'I have to do my homework.', 'しない → しなければ + なりません = have to do.'],
+      ['{毎日|まいにち}{薬|くすり}を[[{飲|の}まなければ]]ならない。', ['{飲|の}まなければ', '{飲|の}みなければ', '{飲|の}むなければ'], 'I have to take medicine every day.', 'Start from the ない form 飲まない, then なければ.'],
+      ['{八時|はちじ}までに{会社|かいしゃ}に[[{行|い}かなきゃ]]。', ['{行|い}かなきゃ', '{行|い}きなきゃ', '{行|い}くなきゃ'], 'I’ve got to get to work by eight.', 'なきゃ is the casual short form of なければならない.'],
+      ['{明日|あした}は{六時|ろくじ}に[[{起|お}きなければ]]なりません。', ['{起|お}きなければ', '{起|お}かなければ', '{起|お}くなければ'], 'I have to get up at six tomorrow.', '起きる is a る-verb: 起きない → 起きなければ.'],
+    ],
+    'N4',
+  ),
+  point(
+    'takotogaaru',
+    'Have done before: 〜たことがある',
+    '〜たことがあります',
+    'Talk about experiences: 日本に行ったことがある (I’ve been to Japan).',
+    [
+      'Past た form + ことがある means "have done at least once": 寿司を食べたことがある.',
+      'ことがない means "have never": 一度も見たことがない (I’ve never seen it, not even once).',
+    ],
+    [
+      ['{富士山|ふじさん}に{登|のぼ}ったことがあります。', 'I’ve climbed Mount Fuji.'],
+      ['{納豆|なっとう}を{食|た}べたことがない。', 'I’ve never eaten natto.'],
+    ],
+    [
+      ['{日本|にほん}に[[{行|い}った]]ことがありますか。', ['{行|い}った', '{行|い}く', '{行|い}って'], 'Have you ever been to Japan?', 'Experiences use the past た form: 行ったことがある.'],
+      ['この{映画|えいが}を{見|み}た[[こと]]があります。', ['こと', 'もの', 'ところ'], 'I’ve seen this movie.', 'ことがある = have the experience of.'],
+      ['{竜|りゅう}を{見|み}たことが[[ない]]。', ['ない', 'ある', 'いる'], 'I’ve never seen a dragon.', 'ことがない = have never.'],
+      ['{着物|きもの}を[[{着|き}た]]ことがありますか。', ['{着|き}た', '{着|き}て', '{着|き}る'], 'Have you ever worn a kimono?', '着る → 着た + ことがある.'],
+    ],
+    'N4',
+  ),
+  point(
+    'toomou',
+    'I think: 〜と思う',
+    '〜と思います',
+    'Give an opinion or a guess: 明日は雨だと思う (I think it’ll rain tomorrow).',
+    [
+      'Put the thought in plain form, then と思う (polite: と思います): おいしいと思う. After a noun or な-adjective, add だ: 雨だと思う, 静かだと思う.',
+      'To ask someone’s opinion: どう思いますか (What do you think?).',
+    ],
+    [
+      ['この{本|ほん}はおもしろいと{思|おも}います。', 'I think this book is interesting.'],
+      ['{彼|かれ}は{来|こ}ないと{思|おも}う。', 'I don’t think he’s coming.'],
+    ],
+    [
+      ['{明日|あした}は{晴|は}れる[[と]]{思|おも}います。', ['と', 'を', 'が'], 'I think it’ll be sunny tomorrow.', 'The thought is marked with と before 思う.'],
+      ['あの{人|ひと}は{先生|せんせい}[[だ]]と{思|おも}う。', ['だ', 'です', 'な'], 'I think that person is a teacher.', 'Before と思う, a noun takes plain だ: 先生だと思う.'],
+      ['この{問題|もんだい}は[[{難|むずか}しい]]と{思|おも}います。', ['{難|むずか}しい', '{難|むずか}しいだ', '{難|むずか}しいです'], 'I think this problem is difficult.', 'い-adjectives go straight before と思う, with no だ.'],
+      ['{日本語|にほんご}についてどう[[{思|おも}います]]か。', ['{思|おも}います', '{言|い}います', '{見|み}ます'], 'What do you think about Japanese?', 'どう思いますか = what do you think?'],
+    ],
+    'N4',
+  ),
+  point(
+    'yori',
+    'Comparing: より・のほうが',
+    'AはBより〜・Bのほうが〜',
+    'Compare two things: 犬より猫が好き (I like cats more than dogs).',
+    [
+      'AはBより + adjective means "A is more … than B": 東京は大阪より大きい.',
+      'To ask which of two, use どちら: 犬と猫と、どちらが好きですか. Answer with のほうが: 猫のほうが好きです.',
+    ],
+    [
+      ['{電車|でんしゃ}はバスより{速|はや}い。', 'Trains are faster than buses.'],
+      ['{夏|なつ}と{冬|ふゆ}、どちらが{好|す}きですか。', 'Which do you like better, summer or winter?'],
+    ],
+    [
+      ['{今日|きょう}は{昨日|きのう}[[より]]{寒|さむ}いです。', ['より', 'から', 'まで'], 'Today is colder than yesterday.', 'より marks what you compare against: than yesterday.'],
+      ['{私|わたし}は{肉|にく}より{魚|さかな}の[[ほう]]が{好|す}きです。', ['ほう', 'こと', 'もの'], 'I prefer fish to meat.', 'Xのほうが = X is the one that is more so.'],
+      ['コーヒーと{紅茶|こうちゃ}と、[[どちら]]がいいですか。', ['どちら', 'どれ', 'どこ'], 'Which would you like, coffee or tea?', 'Choosing between two: どちら.'],
+      ['{兄|あに}は{私|わたし}[[より]]{背|せ}が{高|たか}い。', ['より', 'ほど', 'まで'], 'My older brother is taller than me.', 'より = than. ほど only works with a negative: 兄ほど高くない.'],
+    ],
+    'N4',
+  ),
+  point(
+    'tsumori',
+    'Plan to: 〜つもり',
+    '〜つもりです',
+    'Talk about plans: 来年日本に行くつもりです (I plan to go to Japan next year).',
+    [
+      'Dictionary form + つもり means "intend to": 勉強するつもり. Planning not to: ないつもり.',
+      'It states a firm plan of your own.',
+    ],
+    [
+      ['{来年|らいねん}、{日本|にほん}に{行|い}くつもりです。', 'I plan to go to Japan next year.'],
+      ['もうお{酒|さけ}は{飲|の}まないつもりだ。', 'I don’t intend to drink anymore.'],
+    ],
+    [
+      ['{週末|しゅうまつ}は{家|いえ}で[[{休|やす}む]]つもりです。', ['{休|やす}む', '{休|やす}んで', '{休|やす}みます'], 'I plan to rest at home this weekend.', 'つもり follows the dictionary form: 休むつもり.'],
+      ['{夏休|なつやす}みに{日本語|にほんご}を{勉強|べんきょう}する[[つもり]]です。', ['つもり', 'こと', 'ほう'], 'I plan to study Japanese over the summer break.', 'Dictionary form + つもりです = plan to.'],
+      ['{今日|きょう}は{何|なに}も[[{買|か}わない]]つもりだ。', ['{買|か}わない', '{買|か}わなく', '{買|か}いない'], 'I’m not planning to buy anything today.', 'Planning not to do something: ないつもり.'],
+      ['{将来|しょうらい}、{冒険者|ぼうけんしゃ}に[[なる]]つもりです。', ['なる', 'なります', 'なって'], 'In the future, I intend to become an adventurer.', 'なる (become) + つもり.'],
+    ],
+    'N4',
+  ),
+  point(
+    'potential',
+    'Can do: the potential form',
+    '食べられる・読める・できる',
+    'Say what you can do: 漢字が読める (I can read kanji).',
+    [
+      'る-verbs: drop る and add られる (食べる → 食べられる). う-verbs: change the last kana to its え-row sound and add る (読む → 読める, 書く → 書ける).',
+      'する becomes できる and 来る becomes 来られる (こられる). The thing you can do usually takes が: 日本語が話せる.',
+    ],
+    [
+      ['{私|わたし}は{泳|およ}げます。', 'I can swim.'],
+      ['{漢字|かんじ}が{少|すこ}し{読|よ}めます。', 'I can read a few kanji.'],
+    ],
+    [
+      ['{日本語|にほんご}が[[{話|はな}せます]]か。', ['{話|はな}せます', '{話|はな}れます', '{話|はな}しれます'], 'Can you speak Japanese?', 'う-verb: 話す → 話せる (す → せ).'],
+      ['ひらがなが[[{書|か}けます]]。', ['{書|か}けます', '{書|か}きれます', '{書|か}かれます'], 'I can write hiragana.', '書く → 書ける (く → け). 書かれる is the passive, "is written".'],
+      ['{納豆|なっとう}が[[{食|た}べられます]]か。', ['{食|た}べられます', '{食|た}べります', '{食|た}べけます'], 'Can you eat natto?', '食べる is a る-verb: 食べられる. (Casual speech often says 食べれる.)'],
+      ['{料理|りょうり}が[[できます]]か。', ['できます', 'しれます', 'されます'], 'Can you cook?', 'する becomes できる.'],
+      ['{明日|あした}のパーティーに[[{来|こ}られます]]か。', ['{来|こ}られます', '{来|き}ます', '{来|く}るれます'], 'Can you come to the party tomorrow?', '来る → 来られる (こられる). 来ます would be "will you come?".'],
+    ],
+    'N4',
+  ),
+  point(
+    'maeni',
+    'Before and after: 〜前に・〜後で',
+    '〜前に・〜た後で',
+    'Put events in order: 寝る前に (before sleeping), 食べた後で (after eating).',
+    [
+      'Dictionary form + 前に = before doing: 寝る前に歯を磨く. With a noun: の前に (食事の前に).',
+      'Past た form + 後で = after doing: 食べた後で散歩する. With a noun: の後で (授業の後で).',
+    ],
+    [
+      ['{寝|ね}る{前|まえ}に{本|ほん}を{読|よ}みます。', 'I read before going to bed.'],
+      ['{仕事|しごと}の{後|あと}で{飲|の}みに{行|い}こう。', 'Let’s go for a drink after work.'],
+    ],
+    [
+      ['[[{食|た}べる]]{前|まえ}に{手|て}を{洗|あら}います。', ['{食|た}べる', '{食|た}べた', '{食|た}べて'], 'I wash my hands before eating.', '前に always takes the dictionary form, even about the past.'],
+      ['{宿題|しゅくだい}を[[した]]{後|あと}で、ゲームをします。', ['した', 'する', 'して'], 'After doing my homework, I play games.', '後で takes the past た form.'],
+      ['{授業|じゅぎょう}[[の]]{前|まえ}に{先生|せんせい}と{話|はな}した。', ['の', 'を', 'が'], 'I talked with the teacher before class.', 'A noun needs の before 前に: 授業の前に.'],
+      ['{映画|えいが}を{見|み}た[[{後|あと}で]]、ご{飯|はん}を{食|た}べよう。', ['{後|あと}で', '{前|まえ}に', 'まで'], 'After watching the movie, let’s eat.', '見た + 後で = after watching.'],
+    ],
+    'N4',
+  ),
+  point(
+    'tari',
+    'Things like: 〜たり〜たりする',
+    '〜たり〜たりします',
+    'List some of the things you do: 本を読んだり、映画を見たりする.',
+    [
+      'Take the past た form, add り, and end the list with する: 読んだり、見たりする means "do things like reading and watching".',
+      'It suggests the list isn’t complete. A single 〜たりする softens what you say: "things like that".',
+    ],
+    [
+      ['{週末|しゅうまつ}は{掃除|そうじ}をしたり、{買|か}い{物|もの}に{行|い}ったりします。', 'On weekends I do things like cleaning and going shopping.'],
+      ['{休|やす}みの{日|ひ}は{寝|ね}たりゲームをしたりする。', 'On days off I sleep, play games, that kind of thing.'],
+    ],
+    [
+      ['{日曜日|にちようび}は{本|ほん}を[[{読|よ}んだり]]、{音楽|おんがく}を{聞|き}いたりします。', ['{読|よ}んだり', '{読|よ}みたり', '{読|よ}むたり'], 'On Sundays I read books, listen to music and so on.', 'たり attaches to the past form: 読んだ → 読んだり.'],
+      ['ギルドでは{依頼|いらい}を{受|う}けたり、{仲間|なかま}と{話|はな}したり[[します]]。', ['します', 'です', 'あります'], 'At the guild I take on quests, talk with my party and so on.', 'A たり list ends with する.'],
+      ['{夏休|なつやす}みは{海|うみ}で{泳|およ}いだり、{山|やま}に[[{登|のぼ}ったり]]した。', ['{登|のぼ}ったり', '{登|のぼ}りたり', '{登|のぼ}るたり'], 'Over summer break I swam in the sea, climbed mountains and so on.', '登る → 登った → 登ったり.'],
+      ['{昨日|きのう}は{友達|ともだち}と{話|はな}したり、ゲームを[[したり]]しました。', ['したり', 'しったり', 'するたり'], 'Yesterday I talked with friends, played games and so on.', 'する → した → したり.'],
+    ],
+    'N4',
   ),
 ]
 

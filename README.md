@@ -15,7 +15,9 @@ A small Japanese study app built around how memory works: kana drilled until rea
 - **Backups.** Export and import a JSON file of your progress.
 - **On-screen romaji keys** on touch screens, laid out in the page so the phone's keyboard never covers the card or the game. Settings can switch back to the device keyboard (for example a Japanese flick keyboard).
 - **Manga reader.** Photograph a manga page (or paste text). Claude transcribes it line by line with furigana, word meanings and short grammar notes. Translations stay hidden until you ask, so you try reading first. Tap a word to add it to your reviews; its example sentence becomes the actual line from your manga. (Needs the claude.ai version, where it runs on your own Claude account.)
-- **Grammar.** 18 beginner grammar points in a learning order (こそあど, は, です, の, か/ね/よ, も, が, を, ます, に, で, と, い/な-adjectives, たい, てください, ている, ましょう), each with a short explanation, examples with audio and 4–5 fill-the-gap exercises. Starting a point adds its exercises to the review queue, scheduled like words.
+- **Grammar.** 30 grammar points: 18 at JLPT N5 and 12 at N4 (から/ので, ながら, てもいい, てはいけない, なければならない, たことがある, と思う, より/のほうが, つもり, potential form, 前に/後で, たり). The 18 N5 points come in a learning order (こそあど, は, です, の, か/ね/よ, も, が, を, ます, に, で, と, い/な-adjectives, たい, てください, ている, ましょう), each with a short explanation, examples with audio and 4–5 fill-the-gap exercises. Starting a point adds its exercises to the review queue, scheduled like words.
+- **Practice.** Verb and adjective forms (type 書く → 書いて, 高い → 高くない, with the rule after each answer; a conjugation engine covers every deck verb and adjective, irregulars included) and listening rounds (hear a word or sentence you know, pick its meaning).
+- **Undo** for the last answer in reviews.
 - **Stories.** Six short graded stories (daily life and fantasy) with furigana, audio and hidden translations. In the claude.ai version, Claude writes new stories from the words you've started and the grammar you're practising, with tappable words you can add to your reviews.
 - **Decks.** *Starter* (138 everyday words) and *Adventurer* (45 fantasy and isekai words: 勇者, 魔法, 冒険者, 経験値…). New words alternate between enabled decks, and words you add from manga come first. Every built-in sentence is checked by a test against its word's reading.
 - **Guild (idle).** Every card you've learned is an adventurer earning gold. Income grows with how well you know the card (FSRS stability), and overdue cards rest and earn nothing until reviewed, so the idle loop rewards reviewing on time rather than grinding. Gold piles up for at most 24 hours. Guild rank goes from F to S with mature cards. Gold buys buildings and permanent Night Watch upgrades.
@@ -73,6 +75,7 @@ Notes:
 | `src/lib/reader.ts` | Manga reader prompt, reply validation, furigana splitting, turning a line into a card |
 | `src/lib/guild.ts` | Idle income, ranks, buildings and perks |
 | `src/lib/run.ts` | Night Watch rules: spawning, answer matching, upgrades |
+| `src/lib/conjugate.ts`, `src/data/wordClasses.ts` | Conjugation engine and the verb/adjective class of each deck word |
 | `src/lib/srs.ts` | FSRS wrapper, study queue (learning cards first, then reviews, then new), stats |
 | `src/lib/answer.ts` | Answer checking. Readings are compared in katakana so the long-vowel mark survives (コーヒー) |
 | `src/lib/kanaDrill.ts` | Kana fluency rules and weighted session picking |
@@ -82,7 +85,7 @@ Notes:
 | `src/lib/platform.ts`, `public/sw.js` | Android shell bridge, offline support for the Pages site |
 | `android/` | Android shell (Java, no third-party dependencies) |
 | `.github/workflows/` | Deploy to Pages on every push; build and release the APK |
-| `src/views/` | Today, Review, Learn (Kana, Grammar, Stories), Read, Play (guild), Night Watch, Words, Settings screens |
+| `src/views/` | Today, Review, Learn (Kana, Grammar, Practice, Stories), Read, Play (guild), Night Watch, Words, Settings screens |
 
 ## Roadmap
 
@@ -90,4 +93,4 @@ Notes:
 2. **Bigger deck.** Build a frequency-ordered deck with example sentences from [Tatoeba](https://tatoeba.org) (CC BY). JMdict and KANJIDIC are CC BY-SA and need attribution.
 3. **Kanji.** Component breakdowns ([KanjiVG](https://kanjivg.tagaini.net) for stroke order), always tied to vocabulary you're learning.
 4. **Pitch accent and better audio.** Pitch data from Kanjium, recorded or [VOICEVOX](https://voicevox.hiroshiba.jp) audio, and a shadowing mode.
-5. **More grammar** at JLPT N4 level, and listening-only cards.
+5. **Sync between the Android app and the claude.ai version**, which currently keep separate progress.

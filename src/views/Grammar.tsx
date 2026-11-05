@@ -87,10 +87,17 @@ export function Grammar({
     <div className="grammar">
       <p className="lead">
         Short lessons on the grammar every beginner needs, in a sensible order. Start a point and its fill-the-gap
-        exercises join your reviews. One or two new points a day is plenty. {started > 0 && `${started} of ${GRAMMAR.length} started.`}
+        exercises join your reviews. One or two new points a day is plenty. Start the second level once the first
+        feels comfortable. {started > 0 && `${started} of ${GRAMMAR.length} started.`}
       </p>
+      {(['N5', 'N4'] as const).map((level) => (
+        <section key={level} className="grammar-level">
+          <h2 className="section-title">
+            {level === 'N5' ? 'Beginner (JLPT N5)' : 'Next steps (JLPT N4)'}
+          </h2>
       <ol className="grammar-list">
-        {GRAMMAR.map((g, i) => {
+        {GRAMMAR.filter((g) => g.level === level).map((g) => {
+          const i = GRAMMAR.indexOf(g)
           const status = grammarStatus(state, g.id)
           return (
             <li key={g.id}>
@@ -110,6 +117,8 @@ export function Grammar({
           )
         })}
       </ol>
+        </section>
+      ))}
     </div>
   )
 }
