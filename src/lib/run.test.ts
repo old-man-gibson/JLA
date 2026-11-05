@@ -64,6 +64,14 @@ describe('Night Watch matching', () => {
     expect(matchTyped(s, 'n', true)?.id).toBe(1)
   })
 
+  it('accepts the usual romaji for ぢ, づ and を', () => {
+    const s = createRun({})
+    s.enemies = [enemy(1, kana('づ')), enemy(2, kana('ヂ')), enemy(3, kana('を'))]
+    expect(matchTyped(s, 'ず', false)?.id).toBe(1)
+    expect(matchTyped(s, 'じ', false)?.id).toBe(2)
+    expect(matchTyped(s, 'お', false)?.id).toBe(3)
+  })
+
   it('targets the closest enemy when two share an answer', () => {
     const s = createRun({})
     s.enemies = [enemy(1, kana('あ'), 0.8), enemy(2, kana('あ'), 0.3)]

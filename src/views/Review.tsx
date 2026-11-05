@@ -3,6 +3,7 @@ import { Rating, type Grade } from 'ts-fsrs'
 import { bind, unbind } from 'wanakana'
 import { AudioButton } from '../components/AudioButton'
 import { Keypad } from '../components/Keypad'
+import { resolveLayout } from '../lib/keypadLayouts'
 import { Sentence } from '../components/Sentence'
 import type { Word } from '../data/deck'
 import { useKeys } from '../hooks/useKeys'
@@ -327,7 +328,7 @@ function ProduceCard({ card, word, settings, onGrade }: CardProps) {
           </button>
         )}
       </form>
-      {!result && onscreen && <Keypad onKey={pressKey} enterLabel="Check" />}
+      {!result && onscreen && <Keypad layout={resolveLayout(settings.keypadLayout)} onKey={pressKey} enterLabel="Check" />}
       {result && (
         <div className="result-block" ref={resultRef}>
           <div className={`verdict ${result.correct ? 'right' : 'wrong'}`}>

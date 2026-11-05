@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { DECKS } from '../data/decks'
+import { resolveLayout } from '../lib/keypadLayouts'
 import { getCapability, type Downloads } from '../lib/cloud'
 import { androidShell } from '../lib/platform'
 import { defaultState, exportState, importState } from '../lib/store'
@@ -203,6 +204,26 @@ export function SettingsView({ state, update, sync }: { state: AppState; update:
           ))}
         </div>
       </section>
+
+      {settings.keyboard !== 'system' && (
+        <section className="setting">
+          <label htmlFor="keypad-layout" className="setting-label">
+            On-screen key layout
+          </label>
+          <p className="setting-help">Match the keyboard you type on every day.</p>
+          <select
+            id="keypad-layout"
+            className="select"
+            value={settings.keypadLayout}
+            onChange={(e) => set({ keypadLayout: e.target.value as Settings['keypadLayout'] })}
+          >
+            <option value="auto">Automatic ({resolveLayout('auto').name}, from your language)</option>
+            <option value="qwertz">QWERTZ (German, Swiss, Central European)</option>
+            <option value="qwerty">QWERTY (English and most others)</option>
+            <option value="azerty">AZERTY (French, Belgian)</option>
+          </select>
+        </section>
+      )}
 
       <section className="setting">
         <label className="toggle">

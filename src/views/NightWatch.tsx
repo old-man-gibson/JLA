@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bind, unbind } from 'wanakana'
 import { Keypad } from '../components/Keypad'
+import { resolveLayout } from '../lib/keypadLayouts'
 import {
   applyUpgrade,
   banish,
@@ -641,7 +642,7 @@ export function NightWatch({ state, update, options, onExit }: Props) {
           </button>
         )}
       </form>
-      {onscreen && over === null && <Keypad dark onKey={pressKey} enterLabel="Enter" />}
+      {onscreen && over === null && <Keypad dark layout={resolveLayout(state.settings.keypadLayout)} onKey={pressKey} enterLabel="Enter" />}
     </div>
   )
 }

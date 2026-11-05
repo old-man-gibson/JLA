@@ -1783,31 +1783,25 @@ button:disabled {
   font-size: 0.9rem;
 }
 
-/* On-screen romaji keyboard */
+/* On-screen romaji keyboard: a grid in half-key units, so rows line up like a phone keyboard */
 .keypad {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 4px 4px;
+  display: grid;
+  column-gap: 5px;
+  row-gap: 8px;
+  padding: 8px 2px 4px;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.keypad-row {
-  display: flex;
-  justify-content: center;
-  gap: 5px;
-}
-
 .key {
-  flex: 0 1 9%;
   min-width: 0;
-  height: 44px;
+  height: 46px;
+  padding: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-family: var(--font-ui);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -1818,11 +1812,10 @@ button:disabled {
 }
 
 .key.action {
-  flex: 0 1 22%;
+  background: var(--surface-2);
 }
 
 .key.enter {
-  flex: 0 1 62%;
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
@@ -1831,9 +1824,13 @@ button:disabled {
 }
 
 .keypad.dark .key {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
   color: #f2efe6;
+}
+
+.keypad.dark .key.action {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .keypad.dark .key:active {
@@ -1865,4 +1862,14 @@ button:disabled {
   padding-left: max(4px, env(safe-area-inset-left, 0px));
   padding-right: max(4px, env(safe-area-inset-right, 0px));
   padding-bottom: 8px;
+}
+
+.select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  max-width: 100%;
 }

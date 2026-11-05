@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoplayAudio: true,
   decks: ['starter', 'adventurer'],
   keyboard: 'auto',
+  keypadLayout: 'auto',
 }
 
 export function defaultGuild(now = new Date()): GuildState {

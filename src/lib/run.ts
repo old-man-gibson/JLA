@@ -266,7 +266,10 @@ export function stepRun(s: RunState, dt: number, pool: Pool, rng: () => number =
   return events
 }
 
-const normalize = (text: string) => toKatakana(text)
+// ぢ/じ, づ/ず and を/お sound the same, and the usual romaji (ji, zu, o) types the
+// second of each, so they count as one for matching.
+const SAME_SOUND: Record<string, string> = { ヂ: 'ジ', ヅ: 'ズ', ヲ: 'オ' }
+const normalize = (text: string) => toKatakana(text).replace(/[ヂヅヲ]/g, (c) => SAME_SOUND[c])
 
 /**
  * Finds the yokai the learner's typing banishes. While typing, it waits if a

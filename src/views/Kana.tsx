@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Keypad } from '../components/Keypad'
+import { resolveLayout } from '../lib/keypadLayouts'
 import { GROUP_LABELS, kanaFor, SCRIPT_LABELS, type KanaGroup, type KanaItem, type Script } from '../data/kana'
 import { isKanaAnswerCorrect, normalizeRomaji } from '../lib/answer'
 import { FLUENT_MS, FLUENT_STREAK, kanaLevel, pickKanaSession, recordKanaAnswer } from '../lib/kanaDrill'
@@ -251,7 +252,7 @@ function KanaDrill({
           readOnly={onscreen}
         />
       </form>
-      {onscreen && <Keypad onKey={pressKey} />}
+      {onscreen && <Keypad layout={resolveLayout(settings.keypadLayout)} onKey={pressKey} />}
     </div>
   )
 }

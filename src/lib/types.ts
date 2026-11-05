@@ -52,6 +52,8 @@ export interface Settings {
   decks: DeckId[]
   /** auto: on-screen romaji keys on touch screens, the device keyboard elsewhere. */
   keyboard: 'auto' | 'onscreen' | 'system'
+  /** Letter layout of the on-screen keys; auto guesses from the device language. */
+  keypadLayout: 'auto' | 'qwerty' | 'qwertz' | 'azerty'
 }
 
 /** A word the learner added from the manga reader. */
